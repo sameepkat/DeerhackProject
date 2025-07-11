@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Button } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Button, TextInput } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import Slider from '@react-native-community/slider';
+import { PanResponder } from 'react-native';
 
 const features = [
   {
@@ -18,17 +18,41 @@ const features = [
     icon: 'paperplane.fill',
     action: 'media',
   },
+  {
+    key: 'presentation',
+    label: 'Presentation Remote',
+    icon: 'chevron.right',
+    action: 'presentation',
+  },
+  {
+    key: 'command',
+    label: 'Run Command',
+    icon: 'chevron.left.forwardslash.chevron.right', // Use a valid icon
+    action: 'command',
+  },
+  {
+    key: 'remoteinput',
+    label: 'Remote Input',
+    icon: 'chevron.left.forwardslash.chevron.right', // Use a valid icon
+    action: 'remoteinput',
+  },
   // Add more features here, using only valid icon names from IconSymbol
 ] as const;
 
 type FeatureType = typeof features[number];
 
 export default function ActionsScreen() {
-  const { send, connected } = useWebSocket();
+  const { send, connected, lastMessage } = useWebSocket();
   const [clipboardValue, setClipboardValue] = useState('');
   const [status, setStatus] = useState('');
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
+  const [presentationModalVisible, setPresentationModalVisible] = useState(false);
+  const [commandModalVisible, setCommandModalVisible] = useState(false);
   const [volume, setVolume] = useState(50);
+  const [commandInput, setCommandInput] = useState('');
+  const [commandOutput, setCommandOutput] = useState<string[]>([]);
+  const [remoteInputModalVisible, setRemoteInputModalVisible] = useState(false);
+  const [sensitivity, setSensitivity] = useState(1);
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -46,6 +70,12 @@ export default function ActionsScreen() {
       }
     } else if (feature.action === 'media') {
       setMediaModalVisible(true);
+    } else if (feature.action === 'presentation') {
+      setPresentationModalVisible(true);
+    } else if (feature.action === 'command') {
+      setCommandModalVisible(true);
+    } else if (feature.action === 'remoteinput') {
+      setRemoteInputModalVisible(true);
     }
     // Add more feature actions here
   };
@@ -63,6 +93,61 @@ export default function ActionsScreen() {
       setStatus(`Media action: ${action}`);
     }
   };
+
+  const handlePresentationAction = (action: string) => {
+    if (!connected) {
+      setStatus('Not connected to server');
+      return;
+    }
+    send(JSON.stringify({ type: 'presentation', action }));
+    setStatus(`Presentation action: ${action}`);
+  };
+
+  const handleSendCommand = () => {
+    if (!connected || !commandInput.trim()) return;
+    send(JSON.stringify({ type: 'command', command: commandInput.trim() }));
+    setCommandOutput((prev) => [...prev, `> ${commandInput.trim()}`]);
+    setCommandInput('');
+  };
+
+  // PanResponder for touchpad
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (evt, gestureState) => {
+        // Only send deltas, not absolute positions
+        if (connected) {
+          const dx = gestureState.dx * sensitivity;
+          const dy = gestureState.dy * sensitivity;
+          send(
+            JSON.stringify({
+              type: 'remote_input',
+              dx,
+              dy,
+              sensitivity,
+            })
+          );
+        }
+      },
+      onPanResponderRelease: () => {},
+    })
+  ).current;
+
+  // Listen for output from the server (echoed or real)
+  React.useEffect(() => {
+    if (lastMessage) {
+      try {
+        const msg = JSON.parse(lastMessage);
+        if (msg.type === 'command_output' && typeof msg.output === 'string') {
+          setCommandOutput((prev) => [...prev, msg.output]);
+        }
+      } catch {
+        // Not a JSON message, just append
+        setCommandOutput((prev) => [...prev, lastMessage]);
+      }
+    }
+  }, [lastMessage]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -136,6 +221,107 @@ export default function ActionsScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setMediaModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Presentation Remote Modal */}
+      <Modal visible={presentationModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.presentationModal}>
+            <Text style={styles.mediaTitle}>Presentation Remote</Text>
+            <View style={styles.presentationRow}>
+              <TouchableOpacity style={styles.presentationButton} onPress={() => handlePresentationAction('previous')}>
+                <Text style={styles.presentationButtonText}>⬅️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.presentationButton} onPress={() => handlePresentationAction('next')}>
+                <Text style={styles.presentationButtonText}>➡️</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setPresentationModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Run Command Modal */}
+      <Modal visible={commandModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.commandModal}>
+            <Text style={styles.mediaTitle}>Terminal</Text>
+            <View style={styles.terminalOutput}>
+              <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }}>
+                {commandOutput.map((line, idx) => (
+                  <Text key={idx} style={styles.terminalText}>{line}</Text>
+                ))}
+              </ScrollView>
+            </View>
+            <View style={styles.terminalInputRow}>
+              <Text style={styles.terminalPrompt}>$</Text>
+              <View style={{ flex: 1 }}>
+                <ScrollView horizontal>
+                  <Text
+                    style={styles.terminalInput}
+                    selectable={false}
+                  >
+                    {commandInput}
+                  </Text>
+                </ScrollView>
+                <View style={styles.terminalInputUnderline} />
+              </View>
+            </View>
+            <View style={styles.terminalInputActions}>
+              <TouchableOpacity style={styles.terminalSendButton} onPress={handleSendCommand}>
+                <Text style={styles.terminalSendButtonText}>Send</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.closeButton} onPress={() => setCommandModalVisible(false)}>
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.terminalInputFieldRow}>
+              <TextInput
+                style={styles.terminalInputField}
+                value={commandInput}
+                onChangeText={setCommandInput}
+                placeholder="Enter command..."
+                placeholderTextColor="#888"
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={handleSendCommand}
+                blurOnSubmit={false}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+      {/* Remote Input Modal */}
+      <Modal visible={remoteInputModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.remoteInputOverlay}>
+          <View style={styles.remoteInputModal}>
+            <Text style={styles.mediaTitle}>Remote Input</Text>
+            <View
+              style={styles.touchpad}
+              {...panResponder.panHandlers}
+            >
+              <Text style={styles.touchpadText}>Touchpad Area</Text>
+            </View>
+            <Text style={styles.mediaLabel}>Sensitivity: {sensitivity.toFixed(2)}</Text>
+            <View style={styles.sensitivityRow}>
+              <TouchableOpacity
+                style={styles.sensitivityButton}
+                onPress={() => setSensitivity(Math.max(0.1, sensitivity - 0.1))}
+              >
+                <Text style={styles.sensitivityButtonText}>-</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sensitivityButton}
+                onPress={() => setSensitivity(Math.min(5, sensitivity + 0.1))}
+              >
+                <Text style={styles.sensitivityButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setRemoteInputModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -298,6 +484,157 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: 'white',
     fontSize: 18,
+    fontWeight: 'bold',
+  },
+  presentationModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: 320,
+    elevation: 4,
+  },
+  presentationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 24,
+  },
+  presentationButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    marginHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  presentationButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  commandModal: {
+    backgroundColor: '#181818',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'stretch',
+    width: 340,
+    elevation: 4,
+  },
+  terminalOutput: {
+    backgroundColor: '#111',
+    borderRadius: 8,
+    minHeight: 120,
+    maxHeight: 180,
+    padding: 10,
+    marginBottom: 12,
+  },
+  terminalText: {
+    color: '#b9f18d',
+    fontFamily: 'monospace',
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  terminalInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  terminalPrompt: {
+    color: '#b9f18d',
+    fontFamily: 'monospace',
+    fontSize: 18,
+    marginRight: 6,
+  },
+  terminalInput: {
+    color: '#fff',
+    fontFamily: 'monospace',
+    fontSize: 16,
+    minHeight: 20,
+  },
+  terminalInputUnderline: {
+    height: 1,
+    backgroundColor: '#b9f18d',
+    marginTop: 2,
+  },
+  terminalInputActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  terminalSendButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  terminalSendButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  terminalInputFieldRow: {
+    marginTop: 8,
+  },
+  terminalInputField: {
+    backgroundColor: '#222',
+    color: '#fff',
+    fontFamily: 'monospace',
+    fontSize: 16,
+    borderRadius: 8,
+    padding: 10,
+  },
+  remoteInputOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  remoteInputModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: 340,
+    elevation: 4,
+  },
+  touchpad: {
+    backgroundColor: '#222',
+    borderRadius: 16,
+    width: 280,
+    height: 220,
+    marginVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#1976d2',
+  },
+  touchpadText: {
+    color: '#b9f18d',
+    fontFamily: 'monospace',
+    fontSize: 16,
+  },
+  sensitivityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  sensitivityButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    marginHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sensitivityButtonText: {
+    color: 'white',
+    fontSize: 22,
     fontWeight: 'bold',
   },
 });

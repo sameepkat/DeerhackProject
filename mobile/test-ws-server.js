@@ -23,6 +23,7 @@ const pairingInfo = {
   server_ip: getLocalIp(),
   port_no: PORT,
   pairing_token: TOKEN,
+  host: "process",
 };
 
 console.log('--- WebSocket Pairing Server ---');

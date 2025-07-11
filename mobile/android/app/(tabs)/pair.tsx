@@ -8,6 +8,7 @@ export default function PairScreen() {
   const [ip, setIp] = useState('');
   const [port, setPort] = useState('9000');
   const [token, setToken] = useState('');
+  const [hostType, setHostType] = useState<string | null>(null);
   const { connect, connected, lastMessage } = useWebSocket();
   const [status, setStatus] = useState('Not connected');
   const [scannerVisible, setScannerVisible] = useState(false);
@@ -48,6 +49,7 @@ export default function PairScreen() {
         setIp(parsed.server_ip);
         setPort(parsed.port_no.toString());
         setToken(parsed.pairing_token.toString());
+        setHostType(typeof parsed.host === 'string' ? parsed.host : null);
         setStatus('QR code scanned! Connecting...');
         connect(parsed.server_ip, parsed.port_no.toString(), parsed.pairing_token.toString());
       } else {
@@ -88,6 +90,9 @@ export default function PairScreen() {
       <View style={{ height: 12 }} />
       <Button title="Scan QR" onPress={handleScanQR} />
       <Text style={styles.status}>Status: {connected ? 'Connected' : status}</Text>
+      {hostType && (
+        <Text style={styles.hostType}>Host type: {hostType}</Text>
+      )}
       <Text style={styles.subtitle}>Last Message:</Text>
       <Text style={styles.message}>{lastMessage}</Text>
       <Modal visible={scannerVisible} animationType="slide">
@@ -153,5 +158,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'white',
+  },
+  hostType: {
+    marginTop: 8,
+    fontSize: 15,
+    color: '#1976d2',
+    fontWeight: 'bold',
   },
 }); 
