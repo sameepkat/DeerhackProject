@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, Button } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import Slider from '@react-native-community/slider';
 
 const features = [
   {
@@ -26,6 +27,8 @@ export default function ActionsScreen() {
   const { send, connected } = useWebSocket();
   const [clipboardValue, setClipboardValue] = useState('');
   const [status, setStatus] = useState('');
+  const [mediaModalVisible, setMediaModalVisible] = useState(false);
+  const [volume, setVolume] = useState(50);
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -42,10 +45,23 @@ export default function ActionsScreen() {
         setStatus('Failed to read clipboard');
       }
     } else if (feature.action === 'media') {
-      send(JSON.stringify({ type: 'media', action: 'playpause' }));
-      setStatus('Media control sent!');
+      setMediaModalVisible(true);
     }
     // Add more feature actions here
+  };
+
+  const handleMediaAction = (action: string, value?: number) => {
+    if (!connected) {
+      setStatus('Not connected to server');
+      return;
+    }
+    if (action === 'volume' && typeof value === 'number') {
+      send(JSON.stringify({ type: 'media', action: 'volume', value }));
+      setStatus(`Volume set to ${value}`);
+    } else {
+      send(JSON.stringify({ type: 'media', action }));
+      setStatus(`Media action: ${action}`);
+    }
   };
 
   return (
@@ -68,6 +84,63 @@ export default function ActionsScreen() {
       <Text style={styles.status}>{status}</Text>
       <Text style={styles.label}>Last clipboard value:</Text>
       <Text style={styles.clipboard}>{clipboardValue}</Text>
+      {/* Media Control Modal */}
+      <Modal visible={mediaModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.mediaModal}>
+            <Text style={styles.mediaTitle}>Media Remote</Text>
+            <View style={styles.mediaRow}>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handleMediaAction('previous')}>
+                <Text style={styles.mediaButtonText}>⏮️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handleMediaAction('playpause')}>
+                <Text style={styles.mediaButtonText}>⏯️</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handleMediaAction('next')}>
+                <Text style={styles.mediaButtonText}>⏭️</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.mediaRow}>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handleMediaAction('stop')}>
+                <Text style={styles.mediaButtonText}>⏹️</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.mediaLabel}>Volume</Text>
+            <View style={styles.volumeRow}>
+              <TouchableOpacity
+                style={[styles.volumeButton, volume <= 0 && styles.volumeButtonDisabled]}
+                onPress={() => {
+                  if (volume > 0) {
+                    const newVol = Math.max(0, volume - 5);
+                    setVolume(newVol);
+                    handleMediaAction('volume', newVol);
+                  }
+                }}
+                disabled={volume <= 0}
+              >
+                <Text style={styles.volumeButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.volumeValue}>{volume}</Text>
+              <TouchableOpacity
+                style={[styles.volumeButton, volume >= 100 && styles.volumeButtonDisabled]}
+                onPress={() => {
+                  if (volume < 100) {
+                    const newVol = Math.min(100, volume + 5);
+                    setVolume(newVol);
+                    handleMediaAction('volume', newVol);
+                  }
+                }}
+                disabled={volume >= 100}
+              >
+                <Text style={styles.volumeButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setMediaModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -129,5 +202,102 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
     color: '#333',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  mediaModal: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    width: 320,
+    elevation: 4,
+  },
+  mediaTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  mediaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 12,
+  },
+  mediaLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 12,
+  },
+  slider: {
+    width: 200,
+    height: 40,
+    marginTop: 8,
+  },
+  mediaValue: {
+    fontSize: 16,
+    marginBottom: 12,
+  },
+  mediaButton: {
+    backgroundColor: '#e0e0e0',
+    borderRadius: 32,
+    padding: 18,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  mediaButtonText: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  volumeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+  },
+  volumeButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  volumeButtonDisabled: {
+    backgroundColor: '#bdbdbd',
+  },
+  volumeButtonText: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  volumeValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginHorizontal: 8,
+    minWidth: 40,
+    textAlign: 'center',
+  },
+  closeButton: {
+    marginTop: 18,
+    backgroundColor: '#f44336',
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

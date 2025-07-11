@@ -48,7 +48,8 @@ export default function PairScreen() {
         setIp(parsed.server_ip);
         setPort(parsed.port_no.toString());
         setToken(parsed.pairing_token.toString());
-        setStatus('QR code scanned!');
+        setStatus('QR code scanned! Connecting...');
+        connect(parsed.server_ip, parsed.port_no.toString(), parsed.pairing_token.toString());
       } else {
         setStatus('Invalid QR code format');
       }
