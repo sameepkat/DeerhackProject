@@ -44,6 +44,7 @@ let fileTransfers = {};
 wss.on('connection', function connection(ws) {
   console.log('Client connected!');
   ws.on('message', function incoming(message) {
+    console.log('Raw message received:', message.toString());
     let msg;
     try {
       msg = JSON.parse(message);
