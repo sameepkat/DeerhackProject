@@ -1,0 +1,46 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Environment files
+.env
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.eggs/
+*.whl
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage
+.pytest_cache/
+htmlcov/
+
+# PySide6/Qt UI cache
+*.qrc
+*.ui.py
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Project docs and context
+context.md
+project_structure.md
+
+# IDE/editor folders
+.vscode/
+.idea/
