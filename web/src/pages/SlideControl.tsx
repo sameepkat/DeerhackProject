@@ -1,6 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
+// TypeScript declarations for external libraries
+declare global {
+  interface Window {
+    PPTXjs?: {
+      render: (fileURL: string, options: { containerID: string }) => void;
+    };
+    jQuery?: {
+      fn?: {
+        pptxToHtml?: (options: unknown) => void;
+      };
+      (selector: string): {
+        pptxToHtml: (options: unknown) => Promise<void>;
+      };
+    };
+    JSZip?: unknown;
+    FileReaderJS?: unknown;
+    pptxjs?: unknown;
+    PPTX?: unknown;
+  }
+}
+
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
 
 function formatFileSize(size: number) {
@@ -16,6 +37,7 @@ export default function SlideControl() {
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [fitHeight, setFitHeight] = useState(false);
+  const [numPages, setNumPages] = useState<number | null>(null);
   const fullScreenRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,47 +79,170 @@ export default function SlideControl() {
 
   const selectedFile = selectedFileIdx !== null ? uploadedFiles[selectedFileIdx] : null;
 
-  // Keyboard navigation for PDF pages in fullscreen
+  // Keyboard navigation for PDF and PPTX pages in fullscreen
   useEffect(() => {
-    if (!(isFullScreen && selectedFile && (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf')))) return;
+    if (!(isFullScreen && selectedFile)) return;
+    
+    const isPDF = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
+    const isPPTX = selectedFile.name.toLowerCase().endsWith('.ppt') || selectedFile.name.toLowerCase().endsWith('.pptx');
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        setPageNumber(p => {
-          const next = p + 1;
-          console.log('Next page:', next);
-          return next;
-        });
+        if (isPDF) {
+          setPageNumber(p => {
+            const next = Math.min(numPages || p, p + 1);
+            console.log('Next PDF page:', next);
+            return next;
+          });
+        } else if (isPPTX) {
+          // For PPTX, we need to trigger the next slide in PPTXjs
+          const container = document.getElementById('pptx-container');
+          if (container) {
+            const slides = container.querySelectorAll('.slide');
+            const currentSlide = container.querySelector('.slide.active') || slides[0];
+            const currentIndex = Array.from(slides).indexOf(currentSlide);
+            const nextSlide = slides[currentIndex + 1];
+            
+            if (nextSlide) {
+              slides.forEach(slide => slide.classList.remove('active'));
+              nextSlide.classList.add('active');
+              console.log('Next PPTX slide:', currentIndex + 2);
+            }
+          }
+        }
       } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        setPageNumber(p => {
-          const prev = Math.max(1, p - 1);
-          console.log('Previous page:', prev);
-          return prev;
-        });
+        if (isPDF) {
+          setPageNumber(p => {
+            const prev = Math.max(1, p - 1);
+            console.log('Previous PDF page:', prev);
+            return prev;
+          });
+        } else if (isPPTX) {
+          // For PPTX, we need to trigger the previous slide in PPTXjs
+          const container = document.getElementById('pptx-container');
+          if (container) {
+            const slides = container.querySelectorAll('.slide');
+            const currentSlide = container.querySelector('.slide.active') || slides[0];
+            const currentIndex = Array.from(slides).indexOf(currentSlide);
+            const prevSlide = slides[currentIndex - 1];
+            
+            if (prevSlide) {
+              slides.forEach(slide => slide.classList.remove('active'));
+              prevSlide.classList.add('active');
+              console.log('Previous PPTX slide:', currentIndex);
+            }
+          }
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFullScreen, selectedFile]);
+  }, [isFullScreen, selectedFile, numPages]);
 
   // Enter browser fullscreen when entering presentation mode
   useEffect(() => {
+    if (!isFullScreen) return;
+    
     const el = fullScreenRef.current;
-    if (el && document.fullscreenElement !== el) {
-      el.requestFullscreen?.();
-    }
+    if (!el) return;
+
+    // Wait for the element to be properly mounted
+    const timer = setTimeout(() => {
+      if (document.fullscreenElement !== el && el.requestFullscreen) {
+        el.requestFullscreen().catch((error) => {
+          console.warn('Failed to enter fullscreen:', error);
+          // Fallback: just show the presentation without browser fullscreen
+        });
+      }
+    }, 100);
+
     const handleFullscreenChange = () => {
       if (document.fullscreenElement !== el) {
         setIsFullScreen(false);
       }
     };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
     return () => {
+      clearTimeout(timer);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       if (document.fullscreenElement === el) {
-        document.exitFullscreen?.();
+        document.exitFullscreen?.().catch(() => {
+          // Ignore errors when exiting fullscreen
+        });
       }
     };
   }, [isFullScreen]);
+
+  useEffect(() => {
+    if (
+      isFullScreen &&
+      selectedFile &&
+      (selectedFile.name.endsWith('.ppt') || selectedFile.name.endsWith('.pptx'))
+    ) {
+      const fileURL = URL.createObjectURL(selectedFile);
+      const container = document.getElementById('pptx-container');
+      if (container) container.innerHTML = '';
+
+      // Wait for fullscreen to be entered and DOM to be ready
+      setTimeout(() => {
+        console.log('Checking PPTXjs availability...');
+        console.log('window.PPTXjs:', typeof window.PPTXjs);
+        console.log('window.jQuery:', typeof window.jQuery);
+        console.log('window.JSZip:', typeof window.JSZip);
+        console.log('window.pptxjs:', typeof window.pptxjs);
+        console.log('window.PPTX:', typeof window.PPTX);
+        console.log('jQuery.fn.pptxToHtml:', typeof window.jQuery?.fn?.pptxToHtml);
+        
+        // Try different ways to access PPTXjs
+        if (window.jQuery?.fn?.pptxToHtml) {
+          console.log('PPTXjs is available via jQuery plugin');
+          try {
+            // Use jQuery plugin method
+            window.jQuery!('#pptx-container').pptxToHtml({
+              pptxFileUrl: fileURL,
+              slidesScale: "100%"
+            }).then(() => {
+              // After rendering, make the first slide active
+              setTimeout(() => {
+                const container = document.getElementById('pptx-container');
+                if (container) {
+                  const slides = container.querySelectorAll('.slide');
+                  if (slides.length > 0) {
+                    slides.forEach(slide => slide.classList.remove('active'));
+                    slides[0].classList.add('active');
+                    console.log('PPTX rendered with', slides.length, 'slides');
+                  }
+                }
+              }, 1000); // Wait for rendering to complete
+            });
+          } catch (error) {
+            console.error('Error rendering PPTX:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (container) container.innerHTML = `Error rendering PPTX: ${errorMessage}`;
+          }
+        } else if (window.PPTXjs && typeof window.PPTXjs.render === 'function') {
+          console.log('PPTXjs is available via window.PPTXjs');
+          try {
+            window.PPTXjs.render(fileURL, { containerID: 'pptx-container' });
+          } catch (error) {
+            console.error('Error rendering PPTX:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            if (container) container.innerHTML = `Error rendering PPTX: ${errorMessage}`;
+          }
+        } else {
+          console.error('PPTXjs not available in any expected form');
+          if (container) container.innerHTML = 'PPTXjs failed to load. Check console for details.';
+        }
+      }, 500); // Increased delay to ensure scripts are loaded
+
+      return () => {
+        URL.revokeObjectURL(fileURL);
+        if (container) container.innerHTML = '';
+      };
+    }
+  }, [isFullScreen, selectedFile]);
 
   if (isFullScreen && selectedFile) {
     const isPDF = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
@@ -107,44 +252,42 @@ export default function SlideControl() {
       fileURL = URL.createObjectURL(selectedFile);
     }
     return (
-      <div ref={fullScreenRef} className="fixed inset-0 bg-black z-50 flex flex-col" style={{ touchAction: 'pinch-zoom' }}>
-        {/* Full Screen Content */}
-        <div className="flex-1 flex flex-col items-center justify-center bg-gray-100">
-          <div className="w-full h-full flex flex-col items-center justify-center">
-            {isPDF && fileURL && (
-              <div className="flex flex-col items-center">
-                <Document
-                  file={fileURL}
-                  onLoadSuccess={async (pdf) => {
-                    if (fitHeight) {
-                      const headerHeight = 64; // px, adjust if needed
-                      const availableHeight = window.innerHeight - headerHeight - 48; // 48px for padding/margin
-                      const page = await pdf.getPage(1);
-                      const viewport = page.getViewport({ scale: 1 });
-                      const newScale = availableHeight / viewport.height;
-                      setScale(newScale);
-                      setFitHeight(false);
-                    }
-                  }}
-                  loading={<div className="text-gray-500">Loading PDF...</div>}
-                  error={<div className="text-red-500">Failed to load PDF.</div>}
-                  className="border shadow-lg bg-white"
-                >
-                  <Page pageNumber={pageNumber} scale={scale} />
-                </Document>
-              </div>
-            )}
-            {isPPT && (
-              <div className="flex flex-col items-center mt-8">
-                <div className="text-6xl mb-4">📊</div>
-                <p className="text-gray-500">PPT/PPTX preview is not supported yet.</p>
-              </div>
-            )}
-            {!isPDF && !isPPT && (
-              <div className="text-gray-500">Preview not available for this file type.</div>
-            )}
+      <div ref={fullScreenRef} className="fixed inset-0 bg-black z-50" style={{ touchAction: 'pinch-zoom' }}>
+        {isPDF && fileURL && (
+          <div className="w-full h-full flex items-center justify-center">
+            <Document
+              file={fileURL}
+              onLoadSuccess={async (pdf) => {
+                setNumPages(pdf.numPages);
+                if (fitHeight) {
+                  const availableHeight = window.innerHeight;
+                  const availableWidth = window.innerWidth;
+                  const page = await pdf.getPage(1);
+                  const viewport = page.getViewport({ scale: 1 });
+                  const hScale = availableHeight / viewport.height;
+                  const wScale = availableWidth / viewport.width;
+                  const newScale = Math.min(hScale, wScale);
+                  setScale(newScale);
+                  setFitHeight(false);
+                }
+              }}
+              loading={<div className="text-gray-500">Loading PDF...</div>}
+              error={<div className="text-red-500">Failed to load PDF.</div>}
+            >
+              <Page pageNumber={pageNumber} scale={scale} />
+            </Document>
           </div>
-        </div>
+        )}
+        {isPPT && (
+          <div className="w-full h-full">
+            <div id="pptx-container" className="w-full h-full" />
+          </div>
+        )}
+        {!isPDF && !isPPT && (
+          <div className="w-full h-full flex items-center justify-center text-gray-500">
+            Preview not available for this file type.
+          </div>
+        )}
       </div>
     );
   }

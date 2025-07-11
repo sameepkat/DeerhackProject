@@ -6,9 +6,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite + React + TS</title>
     <link rel="stylesheet" href="https://unpkg.com/pdfjs-dist@3.11.174/web/pdf_viewer.css" />
+    <link rel="stylesheet" href="/PPTXjs-1.21.1/css/pptxjs.css" />
+    <style>
+      /* Improve PPTX rendering */
+      #pptx-container {
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden;
+      }
+      
+      #pptx-container .slide {
+        width: 100% !important;
+        height: 100% !important;
+        display: none;
+      }
+      
+      #pptx-container .slide.active {
+        display: block !important;
+      }
+      
+      /* Hide CSS parsing errors */
+      .slide svg {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      
+      /* Better slide transitions */
+      .slide {
+        transition: opacity 0.3s ease-in-out;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- Load jQuery first -->
+    <script src="/PPTXjs-1.21.1/js/jquery-1.11.3.min.js"></script>
+    <!-- Load JSZip second -->
+    <script src="/PPTXjs-1.21.1/js/jszip.min.js"></script>
+    <!-- Load FileReaderJS third -->
+    <script src="/PPTXjs-1.21.1/js/filereader.js"></script>
+    <!-- Load PPTXjs last -->
+    <script src="/PPTXjs-1.21.1/js/pptxjs.min.js"></script>
+    <!-- Debug script to check if PPTXjs loaded -->
+    <script>
+      window.addEventListener('load', function() {
+        console.log('PPTXjs loaded:', typeof window.PPTXjs);
+        console.log('jQuery loaded:', typeof window.jQuery);
+        console.log('JSZip loaded:', typeof window.JSZip);
+        console.log('FileReaderJS loaded:', typeof window.FileReaderJS);
+        
+        // Try to access PPTXjs in different ways
+        console.log('window.PPTXjs:', window.PPTXjs);
+        console.log('window.pptxjs:', window.pptxjs);
+        console.log('window.PPTX:', window.PPTX);
+      });
+    </script>
   </body>
 </html>

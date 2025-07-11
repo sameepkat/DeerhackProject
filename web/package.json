@@ -12,7 +12,10 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/vite": "^4.1.11",
+    "jquery": "^3.7.1",
+    "jszip": "^3.10.1",
     "pdfjs-dist": "^5.3.31",
+    "pptxjs": "^0.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
