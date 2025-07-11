@@ -2,6 +2,7 @@
 import platform
 import subprocess
 import sys
+import os
 from typing import Optional
 
 class PCNotificationManager:
@@ -159,31 +160,30 @@ class LinuxDBusNotifier:
             return False
 
 
-# Usage example and testing
 def main():
-    # Initialize notification manager
     notifier = PCNotificationManager()
     
-    # Test basic notification
     print("Testing basic notification...")
     success = notifier.send_notification(
         "KDE Connect Clone",
         "Phone connected successfully!",
-        duration=3
+        duration=30
     )
     print(f"Notification sent: {success}")
     
-    # Test with icon (provide your own icon path)
     print("\nTesting notification with icon...")
+    # Use a relative path for the icon
+    icon_path = os.path.join(os.path.dirname(__file__), '../../assests/test.jpg')
+    icon_path = os.path.abspath(icon_path)
     success = notifier.send_notification(
         "New Message",
         "You have received a new message from your phone",
-        duration=5,
-        icon_path=None  # Replace with actual icon path
+        duration=50,
+        icon_path=icon_path  # not supported in mac, on other please adjust it
     )
     print(f"Notification with icon sent: {success}")
     
-    # Linux D-Bus example (if on Linux)
+    # (if on Linux)
     if platform.system().lower() == "linux":
         print("\nTesting Linux D-Bus notification...")
         dbus_notifier = LinuxDBusNotifier()
@@ -198,22 +198,12 @@ def main():
 
 # Notification server for receiving notifications from phone
 class NotificationServer:
-    """
-    Simple notification server to receive notifications from phone
-    This would be part of your KDE Connect-like app
-    """
     
     def __init__(self):
         self.notifier = PCNotificationManager()
         self.received_notifications = []
     
     def handle_phone_notification(self, notification_data: dict):
-        """
-        Handle incoming notification from phone
-        
-        Args:
-            notification_data: Dict with 'title', 'message', 'app', etc.
-        """
         title = notification_data.get('title', 'Phone Notification')
         message = notification_data.get('message', '')
         app_name = notification_data.get('app', 'Unknown App')
