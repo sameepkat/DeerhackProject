@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Presentation Control</title>
+    <style>
+      body {
+        width: 300px;
+        padding: 15px;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .header h1 {
+        margin: 0;
+        font-size: 16px;
+        color: #333;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 15px;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .status.connected {
+        background: #e8f5e8;
+        color: #2e7d32;
+      }
+
+      .status.disconnected {
+        background: #ffebee;
+        color: #c62828;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      .status-dot.connected {
+        background: #4caf50;
+      }
+
+      .status-dot.disconnected {
+        background: #f44336;
+      }
+
+      .form-group {
+        margin-bottom: 10px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 3px;
+        font-size: 12px;
+        font-weight: 500;
+        color: #555;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 6px 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 12px;
+        box-sizing: border-box;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #4a90e2;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .btn-primary {
+        background: #4a90e2;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #357abd;
+      }
+
+      .btn-secondary {
+        background: #f5f5f5;
+        color: #333;
+        border: 1px solid #ddd;
+      }
+
+      .btn-secondary:hover {
+        background: #e8e8e8;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+
+      .control-btn {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: white;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+      }
+
+      .control-btn:hover {
+        background: #f5f5f5;
+        border-color: #4a90e2;
+      }
+
+      .control-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .info {
+        font-size: 11px;
+        color: #666;
+        text-align: center;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Presentation Control</h1>
+    </div>
+
+    <div id="status" class="status disconnected">
+      <span class="status-dot disconnected"></span>
+      <span class="status-text">Disconnected</span>
+    </div>
+
+    <div class="form-group">
+      <label for="serverIP">Server IP:</label>
+      <input
+        type="text"
+        id="serverIP"
+        placeholder="localhost"
+        value="localhost"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="serverPort">Port:</label>
+      <input type="number" id="serverPort" placeholder="9000" value="9000" />
+    </div>
+
+    <div class="button-group">
+      <button id="connectBtn" class="btn btn-primary">Connect</button>
+      <button id="disconnectBtn" class="btn btn-secondary" disabled>
+        Disconnect
+      </button>
+    </div>
+
+    <div class="controls">
+      <button id="prevBtn" class="control-btn" disabled>← Previous</button>
+      <button id="nextBtn" class="control-btn" disabled>Next →</button>
+      <button id="startBtn" class="control-btn" disabled>Start</button>
+      <button id="exitBtn" class="control-btn" disabled>Exit</button>
+    </div>
+
+    <div class="info">
+      Connect to your desktop server to control presentations remotely. Works
+      with Google Slides, Canva, Prezi, and more.
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
