@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.mjs';
@@ -16,6 +16,7 @@ export default function SlideControl() {
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [fitHeight, setFitHeight] = useState(false);
+  const fullScreenRef = useRef<HTMLDivElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] || null;
@@ -54,11 +55,49 @@ export default function SlideControl() {
     setIsFullScreen(true);
   };
 
-  const closeFullScreen = () => {
-    setIsFullScreen(false);
-  };
-
   const selectedFile = selectedFileIdx !== null ? uploadedFiles[selectedFileIdx] : null;
+
+  // Keyboard navigation for PDF pages in fullscreen
+  useEffect(() => {
+    if (!(isFullScreen && selectedFile && (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf')))) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        setPageNumber(p => {
+          const next = p + 1;
+          console.log('Next page:', next);
+          return next;
+        });
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        setPageNumber(p => {
+          const prev = Math.max(1, p - 1);
+          console.log('Previous page:', prev);
+          return prev;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullScreen, selectedFile]);
+
+  // Enter browser fullscreen when entering presentation mode
+  useEffect(() => {
+    const el = fullScreenRef.current;
+    if (el && document.fullscreenElement !== el) {
+      el.requestFullscreen?.();
+    }
+    const handleFullscreenChange = () => {
+      if (document.fullscreenElement !== el) {
+        setIsFullScreen(false);
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement === el) {
+        document.exitFullscreen?.();
+      }
+    };
+  }, [isFullScreen]);
 
   if (isFullScreen && selectedFile) {
     const isPDF = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
@@ -68,17 +107,7 @@ export default function SlideControl() {
       fileURL = URL.createObjectURL(selectedFile);
     }
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col" style={{ touchAction: 'pinch-zoom' }}>
-        {/* Header */}
-        <div className="bg-gray-900 text-white p-4 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">{selectedFile.name}</h2>
-          <button
-            onClick={closeFullScreen}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 font-semibold"
-          >
-            Close
-          </button>
-        </div>
+      <div ref={fullScreenRef} className="fixed inset-0 bg-black z-50 flex flex-col" style={{ touchAction: 'pinch-zoom' }}>
         {/* Full Screen Content */}
         <div className="flex-1 flex flex-col items-center justify-center bg-gray-100">
           <div className="w-full h-full flex flex-col items-center justify-center">
