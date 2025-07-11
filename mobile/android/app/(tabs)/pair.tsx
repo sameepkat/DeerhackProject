@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView, Modal } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, Modal, Alert } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { DeviceStorage, Device } from '@/services/DeviceStorage';
 
 export default function PairScreen() {
   const [ip, setIp] = useState('');
   const [port, setPort] = useState('9000');
   const [token, setToken] = useState('');
   const [hostType, setHostType] = useState<string | null>(null);
-  const { connect, connected, lastMessage } = useWebSocket();
+  const { connect, connectToDevice, connected, lastMessage, connectedDevice, isAutoConnecting } = useWebSocket();
   const [status, setStatus] = useState('Not connected');
   const [scannerVisible, setScannerVisible] = useState(false);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -23,10 +24,30 @@ export default function PairScreen() {
     getCameraPermissions();
   }, []);
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
+    if (!ip || !port || !token) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
     setStatus('Connecting...');
     connect(ip, port, token);
-    setStatus('Connected');
+    
+    // Save device to storage
+    const deviceId = DeviceStorage.generateDeviceId(ip, port);
+    const device: Device = {
+      id: deviceId,
+      ip,
+      port,
+      token,
+      hostType,
+      name: `${ip}:${port}`, // Default name
+      lastConnected: Date.now(),
+    };
+    
+    await DeviceStorage.saveDevice(device);
+    connectToDevice(device);
+    setStatus('Connected and saved');
   };
 
   const handleScanQR = async () => {
@@ -36,7 +57,7 @@ export default function PairScreen() {
     setScanned(false);
   };
 
-  const handleBarcodeScanned = ({ data }: { data: string }) => {
+  const handleBarcodeScanned = async ({ data }: { data: string }) => {
     setScanned(true);
     setScannerVisible(false);
     try {
@@ -46,12 +67,33 @@ export default function PairScreen() {
         typeof parsed.port_no === 'number' &&
         (typeof parsed.pairing_token === 'number' || typeof parsed.pairing_token === 'string')
       ) {
-        setIp(parsed.server_ip);
-        setPort(parsed.port_no.toString());
-        setToken(parsed.pairing_token.toString());
-        setHostType(typeof parsed.host === 'string' ? parsed.host : null);
+        const serverIp = parsed.server_ip;
+        const portNo = parsed.port_no.toString();
+        const pairingToken = parsed.pairing_token.toString();
+        const hostTypeValue = typeof parsed.host === 'string' ? parsed.host : null;
+        
+        setIp(serverIp);
+        setPort(portNo);
+        setToken(pairingToken);
+        setHostType(hostTypeValue);
         setStatus('QR code scanned! Connecting...');
-        connect(parsed.server_ip, parsed.port_no.toString(), parsed.pairing_token.toString());
+        connect(serverIp, portNo, pairingToken);
+        
+        // Save device to storage
+        const deviceId = DeviceStorage.generateDeviceId(serverIp, portNo);
+        const device: Device = {
+          id: deviceId,
+          ip: serverIp,
+          port: portNo,
+          token: pairingToken,
+          hostType: hostTypeValue,
+          name: `${serverIp}:${portNo}`, // Default name
+          lastConnected: Date.now(),
+        };
+        
+        await DeviceStorage.saveDevice(device);
+        connectToDevice(device);
+        setStatus('QR scanned, connected and saved!');
       } else {
         setStatus('Invalid QR code format');
       }
@@ -90,6 +132,12 @@ export default function PairScreen() {
       <View style={{ height: 12 }} />
       <Button title="Scan QR" onPress={handleScanQR} />
       <Text style={styles.status}>Status: {connected ? 'Connected' : status}</Text>
+      {isAutoConnecting && (
+        <Text style={styles.autoConnectingText}>Auto-connecting to devices...</Text>
+      )}
+      {connectedDevice && (
+        <Text style={styles.connectedDevice}>Connected to: {connectedDevice.name}</Text>
+      )}
       {hostType && (
         <Text style={styles.hostType}>Host type: {hostType}</Text>
       )}
@@ -164,5 +212,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#1976d2',
     fontWeight: 'bold',
+  },
+  connectedDevice: {
+    marginTop: 8,
+    fontSize: 15,
+    color: '#4caf50',
+    fontWeight: 'bold',
+  },
+  autoConnectingText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#1976d2',
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 }); 
