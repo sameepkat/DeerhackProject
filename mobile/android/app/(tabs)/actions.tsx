@@ -267,8 +267,6 @@ export default function ActionsScreen() {
           Sending file: {((fileProgress.sent / fileProgress.total) * 100).toFixed(1)}%
         </Text>
       )}
-      <Text style={styles.label}>Last clipboard value:</Text>
-      <Text style={styles.clipboard}>{clipboardValue}</Text>
       {/* Media Control Modal */}
       <Modal visible={mediaModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
@@ -479,16 +477,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'green',
   },
-  label: {
-    marginTop: 20,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  clipboard: {
-    fontSize: 14,
-    marginTop: 4,
-    color: '#333',
-  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.3)',

@@ -4,6 +4,7 @@ import { Camera, CameraView } from 'expo-camera';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { DeviceStorage, Device } from '@/services/DeviceStorage';
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function PairScreen() {
   const [ip, setIp] = useState('');
@@ -23,6 +24,31 @@ export default function PairScreen() {
     };
     getCameraPermissions();
   }, []);
+
+  // Load most recently connected device when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadMostRecentDevice = async () => {
+        const devices = await DeviceStorage.getAllDevices();
+        if (devices.length > 0) {
+          // Sort by lastConnected (most recent first)
+          const sortedDevices = devices.sort((a, b) => {
+            const aTime = a.lastConnected || 0;
+            const bTime = b.lastConnected || 0;
+            return bTime - aTime;
+          });
+          
+          const mostRecent = sortedDevices[0];
+          setIp(mostRecent.ip);
+          setPort(mostRecent.port);
+          setToken(mostRecent.token);
+          setHostType(mostRecent.hostType);
+        }
+      };
+      
+      loadMostRecentDevice();
+    }, [])
+  );
 
   const handleConnect = async () => {
     if (!ip || !port || !token) {
@@ -141,8 +167,6 @@ export default function PairScreen() {
       {hostType && (
         <Text style={styles.hostType}>Host type: {hostType}</Text>
       )}
-      <Text style={styles.subtitle}>Last Message:</Text>
-      <Text style={styles.message}>{lastMessage}</Text>
       <Modal visible={scannerVisible} animationType="slide">
         <View style={styles.scannerContainer}>
           {hasPermission === false ? (
@@ -191,16 +215,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  subtitle: {
-    marginTop: 20,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  message: {
-    fontSize: 14,
-    marginTop: 4,
-    color: '#333',
-  },
+
   scannerContainer: {
     flex: 1,
     justifyContent: 'center',
