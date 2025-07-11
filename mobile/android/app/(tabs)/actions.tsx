@@ -4,6 +4,14 @@ import * as Clipboard from 'expo-clipboard';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { PanResponder } from 'react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
+
+// Type for file progress
+interface FileProgress {
+  sent: number;
+  total: number;
+}
 
 const features = [
   {
@@ -36,6 +44,12 @@ const features = [
     icon: 'chevron.left.forwardslash.chevron.right', // Use a valid icon
     action: 'remoteinput',
   },
+  {
+    key: 'sendfile',
+    label: 'Send File',
+    icon: 'paperclip',
+    action: 'sendfile',
+  },
   // Add more features here, using only valid icon names from IconSymbol
 ] as const;
 
@@ -53,6 +67,7 @@ export default function ActionsScreen() {
   const [commandOutput, setCommandOutput] = useState<string[]>([]);
   const [remoteInputModalVisible, setRemoteInputModalVisible] = useState(false);
   const [sensitivity, setSensitivity] = useState(1);
+  const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -76,6 +91,76 @@ export default function ActionsScreen() {
       setCommandModalVisible(true);
     } else if (feature.action === 'remoteinput') {
       setRemoteInputModalVisible(true);
+    } else if (feature.action === 'sendfile') {
+      if (!connected) {
+        setStatus('Not connected to server');
+        return;
+      }
+      try {
+        const res = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+        console.log('DocumentPicker result:', res);
+
+        if (res.canceled) {
+          setStatus('File selection cancelled');
+          return;
+        }
+        if (!res.assets || res.assets.length === 0) {
+          setStatus('No file selected');
+          return;
+        }
+
+        const asset = res.assets[0];
+        const fileId = Math.random().toString(36).substr(2, 8);
+        const fileUri = asset.uri;
+        const fileName = asset.name;
+        const fileSize = asset.size ?? 0;
+        const mime = asset.mimeType || 'application/octet-stream';
+
+        if (!fileUri || !fileName || !fileSize) {
+          setStatus('Invalid file selection (missing uri, name, or size)');
+          console.log('Invalid file selection:', { fileUri, fileName, fileSize });
+          return;
+        }
+
+        const chunkSize = 64 * 1024; // 64KB (in bytes, but base64 expands data)
+        setStatus('Reading file...');
+        // Read the whole file as base64
+        const base64String = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+        // Each 3 bytes of binary data become 4 base64 chars, so adjust chunking
+        const base64ChunkSize = Math.floor(chunkSize / 3) * 4; // chunk base64 string by this many chars
+        const totalChunks = Math.ceil(base64String.length / base64ChunkSize);
+        send(JSON.stringify({
+          type: 'file_start',
+          fileId,
+          name: fileName,
+          size: fileSize,
+          mime,
+        }));
+        let sent = 0;
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * base64ChunkSize;
+          const end = Math.min(base64String.length, (i + 1) * base64ChunkSize);
+          const base64Chunk = base64String.slice(start, end);
+          send(JSON.stringify({
+            type: 'file_chunk',
+            fileId,
+            index: i,
+            data: base64Chunk,
+          }));
+        //   await new Promise(resolve => setTimeout(resolve, 5));
+          // Estimate bytes sent (base64 is 4/3 the size of binary)
+          sent = Math.min(fileSize, Math.floor((end * 3) / 4));
+          setFileProgress({ sent, total: fileSize });
+          console.log(`Sent chunk ${i + 1}/${totalChunks}`);
+        }
+        send(JSON.stringify({ type: 'file_end', fileId }));
+        console.log('Sent file_end');
+        setStatus('File sent!');
+        setFileProgress(null);
+      } catch (err: any) {
+        setStatus('File send failed: ' + (err.message || err.toString()));
+        setFileProgress(null);
+      }
     }
     // Add more feature actions here
   };
@@ -167,6 +252,11 @@ export default function ActionsScreen() {
         ))}
       </View>
       <Text style={styles.status}>{status}</Text>
+      {fileProgress && (
+        <Text style={styles.status}>
+          Sending file: {((fileProgress.sent / fileProgress.total) * 100).toFixed(1)}%
+        </Text>
+      )}
       <Text style={styles.label}>Last clipboard value:</Text>
       <Text style={styles.clipboard}>{clipboardValue}</Text>
       {/* Media Control Modal */}
