@@ -68,6 +68,7 @@ export default function ActionsScreen() {
   const [remoteInputModalVisible, setRemoteInputModalVisible] = useState(false);
   const [sensitivity, setSensitivity] = useState(1);
   const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
+  const lastGestureStateRef = React.useRef({ dx: 0, dy: 0 });
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -147,7 +148,6 @@ export default function ActionsScreen() {
             index: i,
             data: base64Chunk,
           }));
-        //   await new Promise(resolve => setTimeout(resolve, 5));
           // Estimate bytes sent (base64 is 4/3 the size of binary)
           sent = Math.min(fileSize, Math.floor((end * 3) / 4));
           setFileProgress({ sent, total: fileSize });
@@ -200,22 +200,32 @@ export default function ActionsScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        // Reset on new touch
+        lastGestureStateRef.current = { dx: 0, dy: 0 };
+      },
       onPanResponderMove: (evt, gestureState) => {
-        // Only send deltas, not absolute positions
+        // Calculate the delta since the last move
+        const dx = (gestureState.dx - lastGestureStateRef.current.dx) * sensitivity;
+        const dy = (gestureState.dy - lastGestureStateRef.current.dy) * sensitivity;
+
+        // Update the ref for the next event
+        lastGestureStateRef.current = { dx: gestureState.dx, dy: gestureState.dy };
+
         if (connected) {
-          const dx = gestureState.dx * sensitivity;
-          const dy = gestureState.dy * sensitivity;
           send(
             JSON.stringify({
               type: 'remote_input',
               dx,
               dy,
-              sensitivity,
             })
           );
         }
       },
-      onPanResponderRelease: () => {},
+      onPanResponderRelease: () => {
+        // Reset the gesture state on release
+        lastGestureStateRef.current = { dx: 0, dy: 0 };
+      },
     })
   ).current;
 
