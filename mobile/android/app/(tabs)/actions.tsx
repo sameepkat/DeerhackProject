@@ -8,24 +8,26 @@ const features = [
   {
     key: 'clipboard',
     label: 'Clipboard Sync',
-    icon: 'doc.on.clipboard',
+    icon: 'chevron.left.forwardslash.chevron.right',
     action: 'clipboard',
   },
   {
     key: 'media',
     label: 'Media Control',
-    icon: 'playpause',
+    icon: 'paperplane.fill',
     action: 'media',
   },
-  // Add more features here
-];
+  // Add more features here, using only valid icon names from IconSymbol
+] as const;
+
+type FeatureType = typeof features[number];
 
 export default function ActionsScreen() {
   const { send, connected } = useWebSocket();
   const [clipboardValue, setClipboardValue] = useState('');
   const [status, setStatus] = useState('');
 
-  const handleFeaturePress = async (feature: typeof features[0]) => {
+  const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
       setStatus('Not connected to server');
       return;
@@ -128,4 +130,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: '#333',
   },
-}); 
+});

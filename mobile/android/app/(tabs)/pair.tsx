@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, Modal } from 'react-native';
+import { Camera, CameraView } from 'expo-camera';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
@@ -9,6 +10,17 @@ export default function PairScreen() {
   const [token, setToken] = useState('');
   const { connect, connected, lastMessage } = useWebSocket();
   const [status, setStatus] = useState('Not connected');
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [scanned, setScanned] = useState(false);
+
+  useEffect(() => {
+    const getCameraPermissions = async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+    };
+    getCameraPermissions();
+  }, []);
 
   const handleConnect = () => {
     setStatus('Connecting...');
@@ -16,9 +28,38 @@ export default function PairScreen() {
     setStatus('Connected');
   };
 
+  const handleScanQR = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    setHasPermission(status === 'granted');
+    setScannerVisible(true);
+    setScanned(false);
+  };
+
+  const handleBarcodeScanned = ({ data }: { data: string }) => {
+    setScanned(true);
+    setScannerVisible(false);
+    try {
+      const parsed = JSON.parse(data);
+      if (
+        typeof parsed.server_ip === 'string' &&
+        typeof parsed.port_no === 'number' &&
+        (typeof parsed.pairing_token === 'number' || typeof parsed.pairing_token === 'string')
+      ) {
+        setIp(parsed.server_ip);
+        setPort(parsed.port_no.toString());
+        setToken(parsed.pairing_token.toString());
+        setStatus('QR code scanned!');
+      } else {
+        setStatus('Invalid QR code format');
+      }
+    } catch {
+      setStatus('Failed to parse QR code');
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <IconSymbol name="link" size={64} color="#888" style={styles.logo} />
+      <IconSymbol name="chevron.right" size={64} color="#888" style={styles.logo} />
       <Text style={styles.title}>Pair with Server</Text>
       <TextInput
         style={styles.input}
@@ -43,9 +84,27 @@ export default function PairScreen() {
         autoCapitalize="none"
       />
       <Button title="Connect" onPress={handleConnect} />
+      <View style={{ height: 12 }} />
+      <Button title="Scan QR" onPress={handleScanQR} />
       <Text style={styles.status}>Status: {connected ? 'Connected' : status}</Text>
       <Text style={styles.subtitle}>Last Message:</Text>
       <Text style={styles.message}>{lastMessage}</Text>
+      <Modal visible={scannerVisible} animationType="slide">
+        <View style={styles.scannerContainer}>
+          {hasPermission === false ? (
+            <Text>No access to camera</Text>
+          ) : (
+            <CameraView
+              onBarcodeScanned={scanned ? undefined : handleBarcodeScanned}
+              barcodeScannerSettings={{
+                barcodeTypes: ['qr'],
+              }}
+              style={StyleSheet.absoluteFillObject}
+            />
+          )}
+          <Button title="Cancel" onPress={() => setScannerVisible(false)} />
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -87,5 +146,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
     color: '#333',
+  },
+  scannerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'white',
   },
 }); 

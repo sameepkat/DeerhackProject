@@ -1,5 +1,6 @@
 const WebSocket = require('ws');
 const os = require('os');
+const QRCode = require('qrcode');
 
 // Utility to get local IP address
 function getLocalIp() {
@@ -18,11 +19,22 @@ const PORT = 9000;
 const TOKEN = Math.random().toString(36).substr(2, 8);
 const wss = new WebSocket.Server({ port: PORT });
 
+const pairingInfo = {
+  server_ip: getLocalIp(),
+  port_no: PORT,
+  pairing_token: TOKEN,
+};
+
 console.log('--- WebSocket Pairing Server ---');
-console.log('LAN IP:', getLocalIp());
+console.log('LAN IP:', pairingInfo.server_ip);
 console.log('Port:', PORT);
 console.log('Pairing token:', TOKEN);
-console.log('--- Waiting for mobile device to connect... ---');
+console.log('--- QR code for pairing ---');
+QRCode.toString(JSON.stringify(pairingInfo), { type: 'terminal' }, (err, url) => {
+  if (err) return console.error('Failed to generate QR code:', err);
+  console.log(url);
+  console.log('--- Waiting for mobile device to connect... ---');
+});
 
 wss.on('connection', function connection(ws) {
   console.log('Client connected!');
