@@ -27,45 +27,24 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="explore"
+        name="devices"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="clipboard"
-        options={{
-          title: 'Clipboard',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.on.clipboard" color={color} />, // Placeholder icon
-        }}
-      />
-      <Tabs.Screen
-        name="filetransfer"
-        options={{
-          title: 'File Transfer',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="arrow.up.arrow.down" color={color} />, // Placeholder icon
-        }}
-      />
-      <Tabs.Screen
-        name="remoteinput"
-        options={{
-          title: 'Remote Input',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="cursorarrow.rays" color={color} />, // Placeholder icon
-        }}
-      />
-      <Tabs.Screen
-        name="mediacontrol"
-        options={{
-          title: 'Media Control',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="playpause" color={color} />, // Placeholder icon
+          title: 'Devices',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="desktopcomputer" color={color} />, // Devices icon
         }}
       />
       <Tabs.Screen
         name="pair"
         options={{
           title: 'Pair',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="link" color={color} />, // Placeholder icon
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="link" color={color} />, // Pair icon
+        }}
+      />
+      <Tabs.Screen
+        name="actions"
+        options={{
+          title: 'Actions',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="bolt" color={color} />, // Actions icon
         }}
       />
     </Tabs>

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
+import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useWebSocket } from '@/services/WebSocketContext';
 
-export default function ClipboardScreen() {
+export default function ActionsScreen() {
   const { send, connected } = useWebSocket();
   const [clipboardValue, setClipboardValue] = useState('');
   const [status, setStatus] = useState('');
@@ -11,7 +11,6 @@ export default function ClipboardScreen() {
   const handleClipboardSync = async () => {
     try {
       const value = await Clipboard.getStringAsync();
-      console.log(value);
       setClipboardValue(value);
       if (connected) {
         send(JSON.stringify({ type: 'clipboard', data: value }));
@@ -24,27 +23,44 @@ export default function ClipboardScreen() {
     }
   };
 
+  // Placeholder handlers for other features
+  const handleMediaControl = () => {
+    if (connected) {
+      send(JSON.stringify({ type: 'media', action: 'playpause' }));
+      setStatus('Media control sent!');
+    } else {
+      setStatus('Not connected to server');
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Clipboard Screen</Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Actions</Text>
       <Button title="Clipboard Sync" onPress={handleClipboardSync} />
+      <View style={styles.button}>
+        <Button title="Media Control (Play/Pause)" onPress={handleMediaControl} />
+      </View>
+      {/* Add more feature buttons here */}
       <Text style={styles.status}>{status}</Text>
       <Text style={styles.label}>Last clipboard value:</Text>
       <Text style={styles.clipboard}>{clipboardValue}</Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
   },
-  text: {
+  title: {
     fontSize: 24,
     marginBottom: 16,
+  },
+  button: {
+    marginTop: 12,
   },
   status: {
     marginTop: 12,
