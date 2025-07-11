@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
 import { useWebSocket } from '@/services/WebSocketContext';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function PairScreen() {
   const [ip, setIp] = useState('');
@@ -17,6 +18,7 @@ export default function PairScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <IconSymbol name="link" size={64} color="#888" style={styles.logo} />
       <Text style={styles.title}>Pair with Server</Text>
       <TextInput
         style={styles.input}
@@ -54,6 +56,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+  },
+  logo: {
+    marginBottom: 24,
   },
   title: {
     fontSize: 24,
