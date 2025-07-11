@@ -562,26 +562,8 @@ class MainWindow(QMainWindow):
         self.main_content.addWidget(devices_page)
         
     def create_file_transfer_page(self):
-        file_transfer_page = QWidget()
-        layout = QVBoxLayout(file_transfer_page)
-        layout.setContentsMargins(24, 24, 24, 24)
-        
-        title = QLabel("File Transfer")
-        title.setStyleSheet("""
-            QLabel {
-                font-size: 24px;
-                font-weight: bold;
-                color: #333333;
-            }
-        """)
-        
-        content = QLabel("File transfer interface will be here")
-        content.setStyleSheet("font-size: 14px; color: #666666;")
-        
-        layout.addWidget(title)
-        layout.addWidget(content)
-        layout.addStretch()
-        
+        from file_transfer_widget import FileTransferWidget
+        file_transfer_page = FileTransferWidget()
         self.main_content.addWidget(file_transfer_page)
         
     def create_messages_page(self):
