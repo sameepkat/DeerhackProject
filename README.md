@@ -1,3 +1,6 @@
+# ANDI MANDI CHANDI, ANDI MANDI CHANDI
+# IF WE DONT WIN U R ...
+
 # Tags
 
 - feat: for new features (e.g., feat: add cursor polling fallback)
