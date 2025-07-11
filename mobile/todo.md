@@ -1,7 +1,7 @@
 # 📝 TODO List for Cross-Device LAN Control & Sync System
 
 ## 📱 Mobile App (React Native)
-- [ ] Set up React Native project (Android first)
+- [x] Set up React Native project (Android first)
 - [ ] Implement WebSocket client for LAN communication
 - [ ] Clipboard sync (send clipboard to laptop)
 - [ ] File transfer to/from laptop
