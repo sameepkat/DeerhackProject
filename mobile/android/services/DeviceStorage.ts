@@ -5,7 +5,7 @@ export interface Device {
   ip: string;
   port: string;
   token: string;
-  
+  hostType?: string;
   name: string;
   lastConnected?: number;
 }

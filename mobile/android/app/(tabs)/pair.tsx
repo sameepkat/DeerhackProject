@@ -42,7 +42,7 @@ export default function PairScreen() {
           setIp(mostRecent.ip);
           setPort(mostRecent.port);
           setToken(mostRecent.token);
-          setHostType(mostRecent.hostType);
+          setHostType(mostRecent.hostType || null);
         }
       };
       
@@ -66,7 +66,7 @@ export default function PairScreen() {
       ip,
       port,
       token,
-      hostType,
+      hostType: hostType || undefined,
       name: hostType || `${ip}:${port}`,
       lastConnected: Date.now(),
     };
@@ -112,7 +112,7 @@ export default function PairScreen() {
           ip: serverIp,
           port: portNo,
           token: pairingToken,
-          hostType: hostTypeValue,
+          hostType: hostTypeValue || undefined,
           name: hostTypeValue || `${serverIp}:${portNo}`,
           lastConnected: Date.now(),
         };

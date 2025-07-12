@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { DeviceStorage, Device } from '@/services/DeviceStorage';
 import { useWebSocket } from '@/services/WebSocketContext';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function DevicesScreen() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -78,43 +79,35 @@ export default function DevicesScreen() {
 
   const renderDeviceItem = ({ item }: { item: Device }) => {
     const isConnected = connectedDevice?.id === item.id;
-    
     return (
-      <TouchableOpacity 
-        style={[styles.deviceCard, isConnected && styles.connectedDeviceCard]}
-        onPress={() => handleDevicePress(item)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.deviceHeader}>
-          <IconSymbol name="desktopcomputer" size={24} color="#1976d2" />
-          <View style={styles.deviceNameContainer}>
-            <Text style={styles.deviceName}>{item.name}</Text>
-            {isConnected && (
-              <Text style={styles.connectedIndicator}>(paired)</Text>
-            )}
+      <View style={[styles.deviceCard, isConnected && styles.connectedDeviceCard]}>
+        <View style={styles.deviceRow}>
+          <IconSymbol name="desktopcomputer" size={28} color="#1976d2" />
+          <View style={styles.deviceInfo}>
+            <View style={styles.deviceNameRow}>
+              <Text style={styles.deviceName} numberOfLines={1} ellipsizeMode="tail">{item.name}</Text>
+              {isConnected && (
+                <View style={styles.pairedBadge}><Text style={styles.pairedBadgeText}>Paired</Text></View>
+              )}
+            </View>
+            <Text style={styles.deviceDetails} numberOfLines={1} ellipsizeMode="tail">{item.ip}:{item.port}</Text>
+          </View>
+          <View style={styles.deviceActionsRow}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleEditName(item)}>
+              <MaterialIcons name="edit" size={22} color="#1976d2" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleRemoveDevice(item)}>
+              <MaterialIcons name="delete" size={22} color="#f44336" />
+            </TouchableOpacity>
           </View>
         </View>
-        <Text style={styles.deviceDetails}>{item.ip}:{item.port}</Text>
-        <View style={styles.deviceActions}>
-          <TouchableOpacity 
-            style={styles.editButton} 
-            onPress={() => handleEditName(item)}
-          >
-            <Text style={styles.editButtonText}>Edit Name</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.removeButton} 
-            onPress={() => handleRemoveDevice(item)}
-          >
-            <Text style={styles.removeButtonText}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
       return (
       <View style={styles.container}>
+        <IconSymbol name="desktopcomputer" size={64} color="#888" style={styles.logo} />
         <Text style={styles.title}>Paired Devices</Text>
         {isAutoConnecting && (
           <Text style={styles.autoConnectingText}>Auto-connecting to devices...</Text>
@@ -130,7 +123,6 @@ export default function DevicesScreen() {
           data={devices}
           renderItem={renderDeviceItem}
           keyExtractor={(item) => item.id}
-          numColumns={2}
           contentContainerStyle={styles.deviceList}
           showsVerticalScrollIndicator={false}
         />
@@ -178,19 +170,21 @@ export default function DevicesScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     padding: 20,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   emptyState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 40,
   },
   logo: {
     marginBottom: 24,
@@ -207,89 +201,80 @@ const styles = StyleSheet.create({
   },
   deviceList: {
     paddingBottom: 20,
+    width: '100%',
   },
   deviceCard: {
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    margin: 8,
+    marginVertical: 12,
+    alignSelf: 'center',
+    width: '92%',
+    minWidth: 0,
+    minHeight: 90,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-    flex: 1,
-    minWidth: (Dimensions.get('window').width - 60) / 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
   connectedDeviceCard: {
-    backgroundColor: '#e3f2fd',
     borderColor: '#1976d2',
     borderWidth: 2,
+    backgroundColor: '#e3f2fd',
   },
-  deviceHeader: {
+  deviceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  deviceInfo: {
+    flex: 1,
+    marginLeft: 12,
+    minWidth: 0,
+  },
+  deviceNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+    minWidth: 0,
   },
   deviceName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 8,
-    flex: 1,
-  },
-  deviceNameContainer: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  connectedIndicator: {
-    fontSize: 12,
-    color: '#1976d2',
-    fontWeight: 'bold',
-    marginLeft: 4,
+    color: '#222',
+    maxWidth: 170,
   },
   deviceDetails: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+    color: '#888',
+    marginTop: 2,
+    maxWidth: 170,
   },
-  hostType: {
-    fontSize: 12,
-    color: '#1976d2',
-    marginBottom: 12,
-  },
-  deviceActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  editButton: {
+  pairedBadge: {
     backgroundColor: '#1976d2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    flex: 1,
-    marginRight: 4,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    marginLeft: 8,
+    alignSelf: 'center',
   },
-  editButtonText: {
+  pairedBadgeText: {
     color: 'white',
+    fontWeight: 'bold',
     fontSize: 12,
-    textAlign: 'center',
   },
-  removeButton: {
-    backgroundColor: '#f44336',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  deviceActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  actionButton: {
+    backgroundColor: 'transparent',
+    padding: 4,
+    marginLeft: 2,
     borderRadius: 6,
-    flex: 1,
-    marginLeft: 4,
-  },
-  removeButtonText: {
-    color: 'white',
-    fontSize: 12,
-    textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,
