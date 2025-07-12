@@ -17,31 +17,31 @@ const features = [
   {
     key: 'clipboard',
     label: 'Clipboard Sync',
-    icon: 'chevron.left.forwardslash.chevron.right',
+    icon: 'doc.on.clipboard',
     action: 'clipboard',
   },
   {
     key: 'media',
     label: 'Media Control',
-    icon: 'paperplane.fill',
+    icon: 'play.circle.fill',
     action: 'media',
   },
   {
     key: 'presentation',
     label: 'Presentation Remote',
-    icon: 'chevron.right',
+    icon: 'rectangle.portrait.and.arrow.right',
     action: 'presentation',
   },
   {
     key: 'command',
     label: 'Run Command',
-    icon: 'chevron.left.forwardslash.chevron.right', // Use a valid icon
+    icon: 'terminal',
     action: 'command',
   },
   {
     key: 'remoteinput',
     label: 'Remote Input',
-    icon: 'chevron.left.forwardslash.chevron.right', // Use a valid icon
+    icon: 'hand.point.up.left.fill',
     action: 'remoteinput',
   },
   {

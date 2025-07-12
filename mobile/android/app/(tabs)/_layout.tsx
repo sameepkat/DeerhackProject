@@ -30,21 +30,21 @@ export default function TabLayout() {
         name="actions"
         options={{
           title: 'Actions',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />, // Actions icon
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />, // Actions icon
         }}
       />
       <Tabs.Screen
         name="pair"
         options={{
           title: 'Pair',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.right" color={color} />, // Pair icon
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="link.icloud" color={color} />, // Pair icon
         }}
       />
       <Tabs.Screen
         name="devices"
         options={{
           title: 'Devices',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />, // Devices icon
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="device.laptop.and.arrow.right" color={color} />, // Devices icon
         }}
       />
     </Tabs>
