@@ -129,7 +129,8 @@ function App() {
               {/* Content Area */}
               <div className="p-4 lg:p-6">
                 <Routes>
-                  <Route path="/" element={<Dashboard />} />
+                  <Route path="/" element={<QRCode />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/qr" element={<QRCode />} />
                   <Route path="/devices" element={<Devices />} />
                   <Route path="/transfer" element={<FileTransfer />} />

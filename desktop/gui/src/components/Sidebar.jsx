@@ -16,8 +16,8 @@ const Sidebar = () => {
   const { devices, isDiscovering } = useDevices();
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Dashboard' },
     { path: '/qr', icon: QrCode, label: 'QR Code' },
+    { path: '/dashboard', icon: Home, label: 'Dashboard' },
     { path: '/devices', icon: Smartphone, label: 'Devices' },
     { path: '/transfer', icon: FolderOpen, label: 'File Transfer' },
     { path: '/multimedia', icon: Volume2, label: 'Multimedia' },
