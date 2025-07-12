@@ -69,7 +69,7 @@ export default function ActionsScreen() {
   const [sensitivity, setSensitivity] = useState(1);
   const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
   const [brightness, setBrightness] = useState(50);
-  const lastGestureStateRef = React.useRef({ dx: 0, dy: 0 });
+  const lastGestureStateRef = React.useRef({ x: 0, y: 0 });
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -204,17 +204,17 @@ export default function ActionsScreen() {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        // Reset on new touch
-        lastGestureStateRef.current = { dx: 0, dy: 0 };
+      onPanResponderGrant: (evt, gestureState) => {
+        // Store initial touch position
+        lastGestureStateRef.current = { x: gestureState.moveX, y: gestureState.moveY };
       },
       onPanResponderMove: (evt, gestureState) => {
         // Calculate the delta since the last move
-        const dx = (gestureState.dx - lastGestureStateRef.current.dx) * sensitivity;
-        const dy = (gestureState.dy - lastGestureStateRef.current.dy) * sensitivity;
+        const dx = (gestureState.moveX - lastGestureStateRef.current.x) * sensitivity;
+        const dy = (gestureState.moveY - lastGestureStateRef.current.y) * sensitivity;
 
         // Update the ref for the next event
-        lastGestureStateRef.current = { dx: gestureState.dx, dy: gestureState.dy };
+        lastGestureStateRef.current = { x: gestureState.moveX, y: gestureState.moveY };
 
         if (connected) {
           send(
@@ -228,7 +228,7 @@ export default function ActionsScreen() {
       },
       onPanResponderRelease: () => {
         // Reset the gesture state on release
-        lastGestureStateRef.current = { dx: 0, dy: 0 };
+        lastGestureStateRef.current = { x: 0, y: 0 };
       },
     })
   ).current;
