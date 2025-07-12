@@ -68,6 +68,7 @@ export default function ActionsScreen() {
   const [remoteInputModalVisible, setRemoteInputModalVisible] = useState(false);
   const [sensitivity, setSensitivity] = useState(1);
   const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
+  const [brightness, setBrightness] = useState(50);
   const lastGestureStateRef = React.useRef({ dx: 0, dy: 0 });
 
   const handleFeaturePress = async (feature: FeatureType) => {
@@ -173,6 +174,9 @@ export default function ActionsScreen() {
     if (action === 'volume' && typeof value === 'number') {
       send(JSON.stringify({ type: 'media', action: 'volume', value }));
       setStatus(`Volume set to ${value}`);
+    } else if (action === 'brightness' && typeof value === 'number') {
+      send(JSON.stringify({ type: 'media', action: 'brightness', value }));
+      setStatus(`Brightness set to ${value}`);
     } else {
       send(JSON.stringify({ type: 'media', action }));
       setStatus(`Media action: ${action}`);
@@ -314,6 +318,36 @@ export default function ActionsScreen() {
                   }
                 }}
                 disabled={volume >= 100}
+              >
+                <Text style={styles.volumeButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.mediaLabel}>Brightness</Text>
+            <View style={styles.volumeRow}>
+              <TouchableOpacity
+                style={[styles.volumeButton, brightness <= 0 && styles.volumeButtonDisabled]}
+                onPress={() => {
+                  if (brightness > 0) {
+                    const newBrightness = Math.max(0, brightness - 5);
+                    setBrightness(newBrightness);
+                    handleMediaAction('brightness', newBrightness);
+                  }
+                }}
+                disabled={brightness <= 0}
+              >
+                <Text style={styles.volumeButtonText}>-</Text>
+              </TouchableOpacity>
+              <Text style={styles.volumeValue}>{brightness}</Text>
+              <TouchableOpacity
+                style={[styles.volumeButton, brightness >= 100 && styles.volumeButtonDisabled]}
+                onPress={() => {
+                  if (brightness < 100) {
+                    const newBrightness = Math.min(100, brightness + 5);
+                    setBrightness(newBrightness);
+                    handleMediaAction('brightness', newBrightness);
+                  }
+                }}
+                disabled={brightness >= 100}
               >
                 <Text style={styles.volumeButtonText}>+</Text>
               </TouchableOpacity>
