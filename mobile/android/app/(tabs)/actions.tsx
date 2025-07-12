@@ -70,6 +70,8 @@ export default function ActionsScreen() {
   const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
   const [brightness, setBrightness] = useState(50);
   const lastGestureStateRef = React.useRef({ x: 0, y: 0 });
+  const [clipboardModalVisible, setClipboardModalVisible] = useState(false);
+  const [receivedClipboard, setReceivedClipboard] = useState('');
 
   const handleFeaturePress = async (feature: FeatureType) => {
     if (!connected) {
@@ -77,14 +79,8 @@ export default function ActionsScreen() {
       return;
     }
     if (feature.action === 'clipboard') {
-      try {
-        const value = await Clipboard.getStringAsync();
-        setClipboardValue(value);
-        send(JSON.stringify({ type: 'clipboard', data: value }));
-        setStatus('Clipboard sent!');
-      } catch (e) {
-        setStatus('Failed to read clipboard');
-      }
+      setClipboardModalVisible(true);
+      return;
     } else if (feature.action === 'media') {
       setMediaModalVisible(true);
     } else if (feature.action === 'presentation') {
@@ -199,6 +195,30 @@ export default function ActionsScreen() {
     setCommandInput('');
   };
 
+  const handleSendClipboard = async () => {
+    if (!connected) {
+      setStatus('Not connected to server');
+      return;
+    }
+    try {
+      const value = await Clipboard.getStringAsync();
+      setClipboardValue(value);
+      send(JSON.stringify({ type: 'clipboard', data: value, action: 'set' }));
+      setStatus('Clipboard sent!');
+    } catch (e) {
+      setStatus('Failed to read clipboard');
+    }
+  };
+
+  const handleGetClipboard = () => {
+    if (!connected) {
+      setStatus('Not connected to server');
+      return;
+    }
+    send(JSON.stringify({ type: 'clipboard', action: 'get' }));
+    setStatus('Requested clipboard from server...');
+  };
+
   // PanResponder for touchpad
   const panResponder = React.useRef(
     PanResponder.create({
@@ -244,6 +264,54 @@ export default function ActionsScreen() {
       } catch {
         // Not a JSON message, just append
         setCommandOutput((prev) => [...prev, lastMessage]);
+      }
+    }
+  }, [lastMessage]);
+
+  // Listen for clipboard data from server
+  React.useEffect(() => {
+    if (lastMessage) {
+      console.log('Received message in clipboard handler:', lastMessage);
+      try {
+        const msg = JSON.parse(lastMessage);
+        console.log('Parsed message:', msg);
+        
+        // Handle clipboard_response (for get clipboard operations)
+        if (msg.type === 'clipboard_response' && typeof msg.data === 'string') {
+          console.log('Setting received clipboard:', msg.data);
+          setReceivedClipboard(msg.data);
+          setStatus('Received clipboard from server!');
+        }
+        // Handle clipboard_request (for set clipboard operations)
+        else if (msg.type === 'clipboard_request') {
+          if (msg.status === 'ok') {
+            setStatus('Clipboard sent successfully!');
+          } else if (msg.status === 'error') {
+            setStatus(`Clipboard error: ${msg.error || 'Unknown error'}`);
+          }
+        }
+        // Handle legacy clipboard format (for backward compatibility)
+        else if (msg.type === 'clipboard' && msg.action === 'get' && typeof msg.data === 'string') {
+          console.log('Setting received clipboard:', msg.data);
+          setReceivedClipboard(msg.data);
+          setStatus('Received clipboard from server!');
+        } else if (msg.type === 'clipboard' && msg.action === 'set') {
+          if (msg.status === 'ok') {
+            setStatus('Clipboard sent successfully!');
+          } else if (msg.status === 'error') {
+            setStatus(`Clipboard error: ${msg.error || 'Unknown error'}`);
+          }
+        }
+        // Handle echo messages (non-JSON messages from server)
+        else if (msg.type === 'echo') {
+          console.log('Echo message:', msg.message);
+        }
+      } catch (error) {
+        console.log('Error parsing message:', error);
+        // If it's not JSON, it might be an old "Echo:" message
+        if (lastMessage.startsWith('Echo:')) {
+          console.log('Received old echo format:', lastMessage);
+        }
       }
     }
   }, [lastMessage]);
@@ -454,6 +522,31 @@ export default function ActionsScreen() {
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setRemoteInputModalVisible(false)}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      {/* Clipboard Modal */}
+      <Modal visible={clipboardModalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.mediaModal, { alignItems: 'stretch' }]}>
+            <Text style={styles.mediaTitle}>Clipboard Sync</Text>
+            <TouchableOpacity style={styles.mediaButton} onPress={handleSendClipboard}>
+              <Text style={styles.mediaButtonText}>📤 Send Clipboard</Text>
+            </TouchableOpacity>
+            <View style={{ height: 12 }} />
+            <TouchableOpacity style={styles.mediaButton} onPress={handleGetClipboard}>
+              <Text style={styles.mediaButtonText}>📥 Get Clipboard</Text>
+            </TouchableOpacity>
+            <View style={{ height: 12 }} />
+            <Text style={{ fontWeight: 'bold', marginBottom: 4, fontSize: 16 }}>Received Clipboard:</Text>
+            <ScrollView style={{ maxHeight: 120, backgroundColor: '#f2f2f2', borderRadius: 8, padding: 8, marginBottom: 12 }}>
+              <Text selectable style={{ fontSize: 14, lineHeight: 20 }}>
+                {receivedClipboard || 'No clipboard data received yet...'}
+              </Text>
+            </ScrollView>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setClipboardModalVisible(false)}>
               <Text style={styles.closeButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
