@@ -1,24 +1,3 @@
-# SYNCBRIDGE
-
-<img width="1440" height="846" alt="image" src="https://github.com/user-attachments/assets/b9e3a51c-d4c8-4f5d-b2f7-e3f8d0d015fd" />
-
-<img width="1440" height="846" alt="image" src="https://github.com/user-attachments/assets/9443593b-73bf-4fb8-9a13-cb8b71a3524c" />
-
-<img width="1440" height="844" alt="image" src="https://github.com/user-attachments/assets/9d03f37d-a004-40f6-a4f8-5e2aee3f3356" />
-
-
-# Tags
-
-- feat: for new features (e.g., feat: add cursor polling fallback)
-- fix: for bug fixes (e.g., fix: correct cursor position print logic)
-- refactor: for code refactoring (e.g., refactor: clean up listener logic)
-- docs: for documentation changes (e.g., docs: update README for usage)
-- chore: for maintenance tasks (e.g., chore: update dependencies)
-- test: for adding or updating tests (e.g., test: add polling test)
-- perf: for performance improvements (e.g., perf: optimize polling interval)
-
-
-
 # SyncConnect - Cross-Device LAN Control System
 
 A comprehensive cross-platform solution for seamless device connectivity and control over local networks. SyncConnect enables file transfer, presentation control, clipboard synchronization, and multimedia control between desktop, mobile, and web platforms.
@@ -34,6 +13,20 @@ A comprehensive cross-platform solution for seamless device connectivity and con
 - **Multimedia Control**: Control volume, brightness, and media playback
 - **Real-time Communication**: WebSocket-based real-time messaging
 - **QR Code Pairing**: Easy device pairing with QR codes
+
+## Screenshots
+
+<img width="1004" height="826" alt="image" src="https://github.com/user-attachments/assets/8b0ecbd1-8d73-408d-9def-55c785d40782" />
+
+<img width="303" height="624" alt="image" src="https://github.com/user-attachments/assets/631bea47-4ecd-46bc-89ad-272e25ffa891" />
+
+<img width="304" height="630" alt="image" src="https://github.com/user-attachments/assets/dd27ce1b-7d8a-4312-8343-cb890970778f" />
+
+<img width="303" height="623" alt="image" src="https://github.com/user-attachments/assets/b4e4918e-1a50-452e-857a-307f1bf54e2e" />
+
+<img width="1280" height="660" alt="image" src="https://github.com/user-attachments/assets/e33ef3f5-56ef-4652-a161-b48361625314" />
+
+
 
 ### Supported Platforms
 
