@@ -217,22 +217,21 @@ export default function ActionsScreen() {
     setStatus('Requested clipboard from server...');
   };
 
-  // PanResponder for touchpad
   const panResponder = React.useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt, gestureState) => {
-        // Store initial touch position
-        lastGestureStateRef.current = { x: gestureState.moveX, y: gestureState.moveY };
+        // Store initial gesture state
+        lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
       },
       onPanResponderMove: (evt, gestureState) => {
         // Calculate the delta since the last move
-        const dx = (gestureState.moveX - lastGestureStateRef.current.x) * sensitivity;
-        const dy = (gestureState.moveY - lastGestureStateRef.current.y) * sensitivity;
+        const dx = (gestureState.dx - lastGestureStateRef.current.x) * sensitivity;
+        const dy = (gestureState.dy - lastGestureStateRef.current.y) * sensitivity;
 
         // Update the ref for the next event
-        lastGestureStateRef.current = { x: gestureState.moveX, y: gestureState.moveY };
+        lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
 
         if (connected) {
           send(

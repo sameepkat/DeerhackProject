@@ -8,6 +8,7 @@ interface WebSocketContextType {
   connected: boolean;
   lastMessage: string | null;
   connectedDevice: Device | null;
+  connectingDevice: Device | null; // New: track which device we are trying to connect to
   isAutoConnecting: boolean;
   connect: (ip: string, port: string, token: string) => void;
   connectToDevice: (device: Device) => void;
@@ -24,57 +25,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [connected, setConnected] = useState(false);
   const [lastMessage, setLastMessage] = useState<string | null>(null);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  const [connectingDevice, setConnectingDevice] = useState<Device | null>(null); // New state
   const [isAutoConnecting, setIsAutoConnecting] = useState(false);
   const autoConnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitialAutoConnectRef = useRef(false);
-
-  const connect = useCallback((ip: string, port: string, token: string) => {
-    if (wsRef.current) {
-      wsRef.current.close();
-    }
-    const ws = new WebSocket(`ws://${ip}:${port}`);
-    wsRef.current = ws;
-    setConnected(false);
-    setConnectedDevice(null);
-    ws.onopen = () => {
-      setConnected(true);
-      ws.send(JSON.stringify({ type: 'pair', token }));
-      // Update lastConnected timestamp for the connected device
-      if (connectedDevice) {
-        DeviceStorage.updateLastConnected(connectedDevice.id);
-      }
-    };
-    ws.onmessage = (event) => {
-      setLastMessage(event.data);
-      try {
-        let data = event.data;
-        if (typeof data === 'string' && data.startsWith('Echo: ')) {
-          data = data.substring(6);
-        }
-        const message = JSON.parse(data);
-        if (message.type === 'hostname' && message.hostname) {
-          const deviceId = DeviceStorage.generateDeviceId(ip, port);
-          DeviceStorage.updateDeviceName(deviceId, message.hostname);
-        }
-      } catch (error) {
-        // It's possible not all messages are JSON, so we'll just log the error
-        // console.log('Could not parse server message:', error);
-      }
-    };
-    ws.onerror = () => {
-      setConnected(false);
-      setConnectedDevice(null);
-    };
-    ws.onclose = () => {
-      setConnected(false);
-      setConnectedDevice(null);
-    };
-  }, []);
-
-  const connectToDevice = useCallback((device: Device) => {
-    connect(device.ip, device.port, device.token);
-    setConnectedDevice(device);
-  }, [connect]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -83,7 +37,97 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     setConnected(false);
     setConnectedDevice(null);
+    setConnectingDevice(null); // Clear connecting device on disconnect
   }, []);
+
+  const connect = useCallback((ip: string, port: string, token: string, isAutoConnect: boolean = false) => {
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    const ws = new WebSocket(`ws://${ip}:${port}`);
+    wsRef.current = ws;
+    setConnected(false);
+
+    if (!isAutoConnect) {
+      // For manual connections, clear previous device state to prepare for the new one
+      setConnectedDevice(null);
+      setConnectingDevice(null);
+    }
+
+    ws.onopen = () => {
+      if (!isAutoConnect) {
+        // Manual connection: user scanned a QR code, use that token immediately.
+        ws.send(JSON.stringify({ type: 'pair', token }));
+      }
+      // For auto-connection, we wait for the 'hello' message from the server.
+    };
+
+    ws.onmessage = (event) => {
+      setLastMessage(event.data);
+      try {
+        const message = JSON.parse(event.data);
+
+        // Case 1: Auto-connect receives the server's fresh token
+        if (isAutoConnect && message.type === 'hello' && message.token) {
+          ws.send(JSON.stringify({ type: 'pair', token: message.token }));
+        
+        // Case 2: Pairing is successful (for both manual and auto-connect)
+        } else if (message.type === 'pair_success' && message.server_info) {
+          setConnected(true);
+          const { server_ip, port_no, pairing_token } = message.server_info;
+          const deviceId = DeviceStorage.generateDeviceId(server_ip, String(port_no));
+          
+          // Use the connecting device's info to preserve name and hostType
+          const baseDevice = connectingDevice || {};
+
+          const newDevice: Device = {
+            id: deviceId,
+            ip: server_ip,
+            port: String(port_no),
+            token: pairing_token,
+            name: baseDevice.name || server_ip, // Keep existing name or use IP as default
+            hostType: baseDevice.hostType || null,
+            lastConnected: Date.now(),
+          };
+
+          setConnectedDevice(newDevice);
+          DeviceStorage.saveDevice(newDevice);
+          setConnectingDevice(null); // Clear connecting device on success
+
+        // Case 3: Pairing fails
+        } else if (message.type === 'pair_failed') {
+          console.error('Pairing failed:', message.message);
+          disconnect(); // Disconnect and clear state on failure
+        
+        // Case 4: Server provides its hostname after pairing
+        } else if (message.type === 'hostname' && message.hostname) {
+          if (connectedDevice) {
+            DeviceStorage.updateDeviceName(connectedDevice.id, message.hostname);
+            setConnectedDevice(prev => prev ? { ...prev, name: message.hostname } : null);
+          }
+        }
+      } catch (error) {
+        // console.log('Could not parse server message:', error);
+      }
+    };
+
+    ws.onerror = () => {
+      setConnected(false);
+      setConnectedDevice(null);
+      setConnectingDevice(null); // Clear connecting device on error
+    };
+
+    ws.onclose = () => {
+      setConnected(false);
+      setConnectedDevice(null);
+      setConnectingDevice(null); // Clear connecting device on close
+    };
+  }, [connectingDevice, connectedDevice, disconnect]);
+
+  const connectToDevice = useCallback((device: Device) => {
+    setConnectingDevice(device); // Set the device we are attempting to connect to
+    connect(device.ip, device.port, device.token, true); // Pass true for auto-connect
+  }, [connect]);
 
   const send = useCallback((data: string) => {
     if (wsRef.current && connected) {
@@ -139,7 +183,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     tryNextDevice();
-  }, [connected, isAutoConnecting]);
+  }, [connected, isAutoConnecting, connectToDevice]);
 
   const stopAutoConnect = useCallback(() => {
     if (autoConnectTimeoutRef.current) {
@@ -176,7 +220,20 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       subscription?.remove();
       stopAutoConnect();
     };
-  }, []); // Empty dependency array - only run once on mount
+  }, [connected, isAutoConnecting, startAutoConnect, stopAutoConnect]); // Dependencies updated
+
+  // Keep the connection alive with pings
+  useEffect(() => {
+    if (!connected) return;
+
+    const pingInterval = setInterval(() => {
+      send(JSON.stringify({ type: 'ping' }));
+    }, 10000); // every 10 seconds
+
+    return () => {
+      clearInterval(pingInterval);
+    };
+  }, [connected, send]);
 
   return (
     <WebSocketContext.Provider value={{ 
@@ -184,6 +241,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       connected, 
       lastMessage, 
       connectedDevice,
+      connectingDevice, // Expose new state
       isAutoConnecting,
       connect, 
       connectToDevice,
@@ -201,4 +259,4 @@ export function useWebSocket() {
   const ctx = useContext(WebSocketContext);
   if (!ctx) throw new Error('useWebSocket must be used within a WebSocketProvider');
   return ctx;
-} 
+}

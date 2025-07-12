@@ -92,6 +92,8 @@ wss.on('connection', function connection(ws) {
         ws.send(JSON.stringify({ type: 'file_ack', fileId: msg.fileId, status: 'success' }));
         delete fileTransfers[msg.fileId];
       }
+    } else if (msg.type === 'remote_input') {
+      console.log(`Pointer move: dx=${msg.dx}, dy=${msg.dy}`);
     } else {
       console.log('Received:', message.toString());
       ws.send('Echo: ' + message);

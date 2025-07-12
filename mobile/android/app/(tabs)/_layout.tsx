@@ -27,10 +27,10 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="devices"
+        name="actions"
         options={{
-          title: 'Devices',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />, // Devices icon
+          title: 'Actions',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />, // Actions icon
         }}
       />
       <Tabs.Screen
@@ -41,10 +41,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="actions"
+        name="devices"
         options={{
-          title: 'Actions',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />, // Actions icon
+          title: 'Devices',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />, // Devices icon
         }}
       />
     </Tabs>
