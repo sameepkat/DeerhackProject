@@ -23,7 +23,7 @@ function createWindow() {
   });
 
   const startUrl = isDev 
-    ? 'http://localhost:3003' 
+    ? 'http://localhost:3000' 
     : `file://${path.join(__dirname, 'dist/index.html')}`;
   
   mainWindow.loadURL(startUrl);
@@ -94,10 +94,34 @@ app.on('window-all-closed', () => {
 
 // IPC handlers
 ipcMain.handle('select-files', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile', 'multiSelections']
-  });
-  return result.filePaths;
+  try {
+    console.log('Opening file selection dialog...');
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile', 'multiSelections'],
+      title: 'Select Files to Transfer',
+      buttonLabel: 'Select Files',
+      filters: [
+        { name: 'All Files', extensions: ['*'] },
+        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'] },
+        { name: 'Documents', extensions: ['pdf', 'doc', 'docx', 'txt', 'rtf'] },
+        { name: 'Videos', extensions: ['mp4', 'avi', 'mov', 'wmv', 'flv'] },
+        { name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg'] }
+      ]
+    });
+    
+    console.log('File selection result:', result);
+    
+    if (result.canceled) {
+      console.log('File selection was cancelled');
+      return [];
+    }
+    
+    console.log('Selected files:', result.filePaths);
+    return result.filePaths;
+  } catch (error) {
+    console.error('Error in select-files handler:', error);
+    throw error;
+  }
 });
 
 ipcMain.handle('select-folder', async () => {

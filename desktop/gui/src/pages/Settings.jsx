@@ -4,7 +4,6 @@ import {
   Wifi, 
   Folder, 
   Bell, 
-  Shield, 
   Info,
   Download,
   Upload,
@@ -350,29 +349,6 @@ const Settings = () => {
               <button className="w-full btn-secondary text-xs sm:text-sm">
                 <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                 Reset Connections
-              </button>
-            </div>
-          </div>
-
-          <div className="card p-4 sm:p-6">
-            <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-              </div>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">Privacy</h2>
-            </div>
-            
-            <div className="space-y-2 sm:space-y-3">
-              <button className="w-full btn-secondary text-xs sm:text-sm">
-                Clear Transfer History
-              </button>
-              
-              <button className="w-full btn-secondary text-xs sm:text-sm">
-                Clear Message History
-              </button>
-              
-              <button className="w-full btn-secondary text-xs sm:text-sm">
-                Reset All Settings
               </button>
             </div>
           </div>

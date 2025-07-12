@@ -3,7 +3,6 @@ import {
   Upload, 
   Download, 
   File, 
-  Folder, 
   X, 
   Check, 
   AlertCircle,
@@ -23,28 +22,67 @@ const FileTransfer = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [targetDevice, setTargetDevice] = useState(null);
+  const [isSelectingFiles, setIsSelectingFiles] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = async () => {
     try {
-      const files = await window.electronAPI.selectFiles();
-      if (files && files.length > 0) {
-        setSelectedFiles(prev => [...prev, ...files.map(path => ({ path, name: path.split('/').pop() }))]);
+      setIsSelectingFiles(true);
+      console.log('Attempting to open file picker...');
+      
+      // Check if we're in Electron environment
+      if (window.electronAPI && window.electronAPI.selectFiles) {
+        console.log('Using Electron file picker...');
+        const files = await window.electronAPI.selectFiles();
+        console.log('Electron selected files:', files);
+        
+        if (files && files.length > 0) {
+          const fileObjects = files.map(path => {
+            const name = path.split('/').pop() || path.split('\\').pop() || 'Unknown File';
+            return {
+              path,
+              name,
+              size: 0,
+              selected: new Date()
+            };
+          });
+          
+          setSelectedFiles(prev => [...prev, ...fileObjects]);
+          console.log('Files added to selection:', fileObjects);
+        } else {
+          console.log('No files selected or dialog was cancelled');
+        }
+      } else {
+        // Fallback to browser file input
+        console.log('Using browser file input fallback...');
+        fileInputRef.current?.click();
       }
     } catch (error) {
       console.error('Failed to select files:', error);
+      // Fallback to browser file input on error
+      console.log('Falling back to browser file input...');
+      fileInputRef.current?.click();
+    } finally {
+      setIsSelectingFiles(false);
     }
   };
 
-  const handleFolderSelect = async () => {
-    try {
-      const folder = await window.electronAPI.selectFolder();
-      if (folder) {
-        setSelectedFiles(prev => [...prev, { path: folder, name: folder.split('/').pop(), isFolder: true }]);
-      }
-    } catch (error) {
-      console.error('Failed to select folder:', error);
+  const handleFileInputChange = (event) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      const fileObjects = files.map(file => ({
+        path: file.path || file.name,
+        name: file.name,
+        size: file.size,
+        selected: new Date()
+      }));
+      
+      setSelectedFiles(prev => [...prev, ...fileObjects]);
+      console.log('Files added via browser input:', fileObjects);
     }
+    
+    // Reset the input
+    event.target.value = '';
   };
 
   const handleDrag = (e) => {
@@ -111,6 +149,16 @@ const FileTransfer = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Hidden file input for fallback */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileInputChange}
+        style={{ display: 'none' }}
+        accept="*/*"
+      />
+      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
         <div>
@@ -124,6 +172,23 @@ const FileTransfer = () => {
             className="btn-secondary text-sm"
           >
             Clear History
+          </button>
+          <button
+            onClick={() => {
+              console.log('Electron API available:', !!window.electronAPI);
+              console.log('Select files function available:', !!window.electronAPI?.selectFiles);
+              if (window.electronAPI?.selectFiles) {
+                console.log('Testing file selection...');
+                window.electronAPI.selectFiles().then(files => {
+                  console.log('Test result:', files);
+                }).catch(err => {
+                  console.error('Test error:', err);
+                });
+              }
+            }}
+            className="btn-secondary text-sm"
+          >
+            Test File Selection
           </button>
         </div>
       </div>
@@ -174,19 +239,21 @@ const FileTransfer = () => {
                 onDrop={handleDrop}
               >
                 <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                <p className="text-xs sm:text-sm text-gray-600 mb-2">Drag and drop files here, or</p>
+                <p className="text-xs sm:text-sm text-gray-600 mb-2">
+                  {selectedFiles.length > 0 
+                    ? `${selectedFiles.length} file(s) selected` 
+                    : 'Drag and drop files here, or'
+                  }
+                </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <button
                     onClick={handleFileSelect}
-                    className="btn-primary text-xs sm:text-sm w-full sm:w-auto"
+                    disabled={isSelectingFiles}
+                    className={`btn-primary text-xs sm:text-sm w-full sm:w-auto ${
+                      isSelectingFiles ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Select Files
-                  </button>
-                  <button
-                    onClick={handleFolderSelect}
-                    className="btn-secondary text-xs sm:text-sm w-full sm:w-auto"
-                  >
-                    Select Folder
+                    {isSelectingFiles ? 'Opening...' : 'Select Files'}
                   </button>
                 </div>
               </div>
@@ -200,7 +267,7 @@ const FileTransfer = () => {
                   {selectedFiles.map((file, index) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                       <div className="flex items-center space-x-2 min-w-0 flex-1">
-                        {file.isFolder ? <Folder className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 flex-shrink-0" /> : <File className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />}
+                        <File className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />
                         <span className="text-xs sm:text-sm text-gray-900 truncate">{file.name}</span>
                         {file.size && (
                           <span className="text-xs text-gray-500 flex-shrink-0">({formatFileSize(file.size)})</span>
