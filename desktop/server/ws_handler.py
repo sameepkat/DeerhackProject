@@ -8,7 +8,7 @@ import websockets
 
 
 from ..utils import QRUtils
-from ..features import send_clipboard, recieve_clipboard, press_key
+from ..features import send_clipboard, recieve_clipboard, press_key, run_command
 
 def get_local_ip():
     """Get the local IP address of the machine."""
@@ -82,10 +82,9 @@ async def process_message(websocket, data, client_ip):
         
     elif msg_type == 'command':
         # Handle device commands
-        command = data.get('command', '')
-        params = data.get('params', {})
+        command = data.get('command','')
         
-        response = await handle_command(command, params, client_ip)
+        response = await handle_command(command, client_ip)
         await websocket.send(json.dumps(response))
         
     elif msg_type == 'file_transfer':
@@ -125,17 +124,21 @@ async def process_message(websocket, data, client_ip):
         }
         await websocket.send(json.dumps(response))
 
-async def handle_command(command, params, client_ip):
+async def handle_command(command, client_ip):
     """Handle different device commands."""
-    print(f'Executing command "{command}" from {client_ip} with params: {params}')
-    
-    # Add your command handling logic here
-    # This is where you'd implement actual device control
-    
+    print(f'Executing command "{command}" from {client_ip}')
+    try:
+        response = run_command(command)
+    except Exception as e:
+        print(f'Error executing command "{command}" from {client_ip}: {e}')
+        response = {
+            'type': 'error',
+            'message': f'Error executing command "{command}": {e}'
+        }
+    print("Response: ", response)
     return {
         'type': 'command_response',
         'command': command,
-        'status': 'success',
         'message': f'Command {command} executed successfully'
     }
 
