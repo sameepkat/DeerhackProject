@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // System operations
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+  quitApp: () => ipcRenderer.invoke('quit-app'),
   
   // Window operations
   minimizeToTray: () => ipcRenderer.invoke('minimize-to-tray'),
@@ -19,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Device discovery
   startDiscovery: () => ipcRenderer.invoke('start-discovery'),
   stopDiscovery: () => ipcRenderer.invoke('stop-discovery'),
+  updateConnectedDevices: (devices) => ipcRenderer.invoke('update-connected-devices', devices),
   
   // File transfer
   sendFiles: (deviceId, files) => ipcRenderer.invoke('send-files', deviceId, files),
@@ -40,6 +42,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onFileReceived: (callback) => ipcRenderer.on('file-received', callback),
   onMessageReceived: (callback) => ipcRenderer.on('message-received', callback),
   onTransferProgress: (callback) => ipcRenderer.on('transfer-progress', callback),
+  onTrayAction: (callback) => ipcRenderer.on('tray-action', callback),
   
   // Remove listeners
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)

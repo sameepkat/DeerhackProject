@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import Dashboard from './pages/Dashboard';
@@ -9,6 +9,45 @@ import MultimediaControl from './pages/MultimediaControl';
 import Settings from './pages/Settings';
 import { DeviceProvider } from './contexts/DeviceContext';
 import { TransferProvider } from './contexts/TransferContext';
+
+// Component to handle tray actions
+function TrayActionHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (window.electronAPI) {
+      const handleTrayAction = (event, action) => {
+        console.log('Tray action received:', action);
+        
+        switch (action) {
+          case 'send-files':
+            navigate('/transfer');
+            break;
+          case 'receive-files':
+            navigate('/transfer');
+            break;
+          case 'clipboard-sync':
+            // You could navigate to a clipboard sync page or trigger clipboard sync
+            console.log('Clipboard sync requested');
+            break;
+          case 'settings':
+            navigate('/settings');
+            break;
+          default:
+            console.log('Unknown tray action:', action);
+        }
+      };
+
+      window.electronAPI.onTrayAction(handleTrayAction);
+
+      return () => {
+        window.electronAPI.removeAllListeners('tray-action');
+      };
+    }
+  }, [navigate]);
+
+  return null;
+}
 
 function App() {
   const [isConnected, setIsConnected] = useState(false);
@@ -52,6 +91,7 @@ function App() {
     <DeviceProvider>
       <TransferProvider>
         <Router>
+          <TrayActionHandler />
           <div className="flex h-screen bg-gray-50">
             {/* Desktop Sidebar */}
             <div className="hidden lg:flex lg:flex-shrink-0">
