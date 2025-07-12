@@ -5,7 +5,7 @@ export interface Device {
   ip: string;
   port: string;
   token: string;
-  hostType: string | null;
+  
   name: string;
   lastConnected?: number;
 }
@@ -55,6 +55,8 @@ export class DeviceStorage {
       console.error('Error updating device name:', error);
     }
   }
+
+  
 
   static async updateLastConnected(deviceId: string): Promise<void> {
     try {

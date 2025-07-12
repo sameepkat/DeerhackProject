@@ -95,9 +95,6 @@ export default function DevicesScreen() {
           </View>
         </View>
         <Text style={styles.deviceDetails}>{item.ip}:{item.port}</Text>
-        {item.hostType && (
-          <Text style={styles.hostType}>Type: {item.hostType}</Text>
-        )}
         <View style={styles.deviceActions}>
           <TouchableOpacity 
             style={styles.editButton} 

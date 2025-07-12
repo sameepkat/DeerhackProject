@@ -86,7 +86,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             port: String(port_no),
             token: pairing_token,
             name: baseDevice.name || server_ip, // Keep existing name or use IP as default
-            hostType: baseDevice.hostType || null,
+            
             lastConnected: Date.now(),
           };
 

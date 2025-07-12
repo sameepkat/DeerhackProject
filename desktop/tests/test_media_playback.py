@@ -22,9 +22,7 @@ def previous_track():
     """Skip to previous track."""
     return media_playback('previous')
 
-def stop_media():
-    """Stop media playback."""
-    return media_playback('stop')
+
 
 def play_media():
     """Play media."""
@@ -48,7 +46,6 @@ def test_media_controls():
     time.sleep(1)
     previous_track()
     time.sleep(1)
-    stop_media()
     
     print("✅ Media control test completed!")
 

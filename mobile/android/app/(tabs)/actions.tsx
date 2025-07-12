@@ -234,12 +234,14 @@ export default function ActionsScreen() {
         lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
 
         if (connected) {
+          const data = {
+            type: 'remote_input',
+            dx,
+            dy,
+          };
+          console.log('Sending remote_input:', data);
           send(
-            JSON.stringify({
-              type: 'remote_input',
-              dx,
-              dy,
-            })
+            JSON.stringify(data)
           );
         }
       },
@@ -352,11 +354,7 @@ export default function ActionsScreen() {
                 <Text style={styles.mediaButtonText}>⏭️</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.mediaRow}>
-              <TouchableOpacity style={styles.mediaButton} onPress={() => handleMediaAction('stop')}>
-                <Text style={styles.mediaButtonText}>⏹️</Text>
-              </TouchableOpacity>
-            </View>
+
             {/* <Text style={styles.mediaLabel}>Volume</Text> */}
             <View style={styles.volumeRow}>
               <TouchableOpacity
