@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   quitApp: () => ipcRenderer.invoke('quit-app'),
   
+  // Settings
+  getSettings: () => ipcRenderer.invoke('get-settings'),
+  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
+  testSettings: () => ipcRenderer.invoke('test-settings'),
+  
   // Window operations
   minimizeToTray: () => ipcRenderer.invoke('minimize-to-tray'),
   showWindow: () => ipcRenderer.invoke('show-window'),

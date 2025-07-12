@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, Notification } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -194,9 +195,11 @@ function createWindow() {
   
   mainWindow.loadURL(startUrl);
 
-  if (isDev) {
-    mainWindow.webContents.openDevTools();
-  }
+  // Optionally open DevTools in development mode
+  // Set OPEN_DEVTOOLS=true to enable automatic opening
+  // if (isDev && process.env.OPEN_DEVTOOLS === 'true') {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
@@ -211,11 +214,18 @@ function createWindow() {
     mainWindow.hide();
   });
 
-  // Prevent closing with Cmd+Q or Alt+F4
+  // Handle window close based on settings
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
-      mainWindow.hide();
+      
+      // Check if minimize to tray is enabled
+      if (global.minimizeToTray !== false) { // Default to true if not set
+        mainWindow.hide();
+      } else {
+        // If minimize to tray is disabled, actually quit the app
+        quitApp();
+      }
     }
   });
 }
@@ -428,7 +438,33 @@ function updateConnectedDevices(devices) {
   updateTrayMenu();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Initialize settings
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settingsData = fs.readFileSync(settingsPath, 'utf8');
+      const settings = JSON.parse(settingsData);
+      
+      // Set global minimize to tray setting
+      global.minimizeToTray = settings.minimizeToTray !== false; // Default to true
+      
+      // Apply auto-start setting
+      if (settings.autoStart) {
+        app.setLoginItemSettings({
+          openAtLogin: true,
+          openAsHidden: true
+        });
+      }
+    } else {
+      // Default settings
+      global.minimizeToTray = true;
+    }
+  } catch (error) {
+    console.error('Error loading settings:', error);
+    global.minimizeToTray = true; // Default to true
+  }
+  
   createMenu();
   createWindow();
   createTray();
@@ -645,4 +681,97 @@ ipcMain.handle('show-window', () => {
 
 ipcMain.handle('quit-app', () => {
   quitApp();
+});
+
+// Settings handlers
+ipcMain.handle('get-settings', () => {
+  try {
+    const settingsPath = path.join(app.getPath('userData'), 'settings.json');
+    if (fs.existsSync(settingsPath)) {
+      const settingsData = fs.readFileSync(settingsPath, 'utf8');
+      const parsedSettings = JSON.parse(settingsData);
+      
+      // Ensure all required settings exist with defaults
+      const defaultSettings = {
+        autoStart: false,
+        minimizeToTray: true,
+        notifications: true,
+        autoAcceptFiles: false,
+        downloadPath: '',
+        maxFileSize: 100,
+        discoveryTimeout: 30
+      };
+      
+      // Merge with defaults to ensure all settings exist
+      return { ...defaultSettings, ...parsedSettings };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error reading settings:', error);
+    return null;
+  }
+});
+
+ipcMain.handle('save-settings', async (event, settings) => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const settingsPath = path.join(userDataPath, 'settings.json');
+    console.log('[Settings] Attempting to save:', settings);
+    console.log('[Settings] Path:', settingsPath);
+
+    // Validate settings
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) {
+      throw new Error('Settings must be a plain object');
+    }
+
+    // Ensure directory exists
+    if (!fs.existsSync(userDataPath)) {
+      fs.mkdirSync(userDataPath, { recursive: true });
+      console.log('[Settings] Created userData directory:', userDataPath);
+    }
+
+    // Try writing a test file
+    try {
+      fs.writeFileSync(path.join(userDataPath, 'test_write.txt'), 'test');
+      fs.unlinkSync(path.join(userDataPath, 'test_write.txt'));
+    } catch (testErr) {
+      throw new Error('Cannot write to userData directory: ' + testErr.message);
+    }
+
+    // Save settings
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+    console.log('[Settings] Saved successfully');
+    return { success: true };
+  } catch (error) {
+    console.error('[Settings] Save failed:', error);
+    return { success: false, message: error.message, stack: error.stack };
+  }
+});
+
+// Test settings handler for debugging
+ipcMain.handle('test-settings', () => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const settingsPath = path.join(userDataPath, 'settings.json');
+    
+    console.log('Test settings - User data path:', userDataPath);
+    console.log('Test settings - Settings path:', settingsPath);
+    console.log('Test settings - User data exists:', fs.existsSync(userDataPath));
+    console.log('Test settings - Settings file exists:', fs.existsSync(settingsPath));
+    
+    if (fs.existsSync(settingsPath)) {
+      const settingsData = fs.readFileSync(settingsPath, 'utf8');
+      console.log('Test settings - File content:', settingsData);
+    }
+    
+    return {
+      userDataPath,
+      settingsPath,
+      userDataExists: fs.existsSync(userDataPath),
+      settingsFileExists: fs.existsSync(settingsPath)
+    };
+  } catch (error) {
+    console.error('Test settings error:', error);
+    throw error;
+  }
 }); 

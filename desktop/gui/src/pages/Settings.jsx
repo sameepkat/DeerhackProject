@@ -14,20 +14,12 @@ import {
 } from 'lucide-react';
 
 const Settings = () => {
-  const [settings, setSettings] = useState({
-    autoStart: false,
-    minimizeToTray: true,
-    notifications: true,
-    autoAcceptFiles: false,
-    downloadPath: '',
-    maxFileSize: 100,
-    discoveryTimeout: 30,
-    theme: 'light',
-    language: 'en'
-  });
-
+  const [settings, setSettings] = useState(null); // Start with null to indicate loading
   const [appVersion, setAppVersion] = useState('');
   const [localIP, setLocalIP] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState({ type: '', message: '' });
+  const [lastSavedSettings, setLastSavedSettings] = useState(null);
 
   useEffect(() => {
     const getAppInfo = async () => {
@@ -37,28 +29,66 @@ const Settings = () => {
         
         const ip = await window.electronAPI.getLocalIP();
         setLocalIP(ip);
+        
+        // Load saved settings with defaults
+        const savedSettings = await window.electronAPI.getSettings();
+        const defaultSettings = {
+          autoStart: false,
+          minimizeToTray: true,
+          notifications: true,
+          autoAcceptFiles: false,
+          downloadPath: '',
+          maxFileSize: 100,
+          discoveryTimeout: 30
+        };
+        
+        // Merge saved settings with defaults
+        const mergedSettings = { ...defaultSettings, ...savedSettings };
+        setSettings(mergedSettings);
+        setLastSavedSettings(mergedSettings); // Track the last saved state
       } catch (error) {
         console.error('Failed to get app info:', error);
+        // Set default settings if loading fails
+        const defaultSettings = {
+          autoStart: false,
+          minimizeToTray: true,
+          notifications: true,
+          autoAcceptFiles: false,
+          downloadPath: '',
+          maxFileSize: 100,
+          discoveryTimeout: 30
+        };
+        setSettings(defaultSettings);
+        setLastSavedSettings(defaultSettings);
+      } finally {
+        setIsLoading(false);
       }
     };
     getAppInfo();
   }, []);
 
-  const handleSettingChange = (key, value) => {
-    setSettings(prev => ({
-      ...prev,
+  const handleSettingChange = async (key, value) => {
+    const newSettings = {
+      ...settings,
       [key]: value
-    }));
-  };
-
-  const handleSaveSettings = async () => {
+    };
+    setSettings(newSettings);
     try {
-      // Save settings logic here
-      console.log('Settings saved:', settings);
+      const result = await window.electronAPI.saveSettings(newSettings);
+      if (result.success) {
+        setLastSavedSettings(newSettings);
+        setSaveStatus({ type: 'success', message: 'Settings saved' });
+      } else {
+        throw new Error(result.message || 'Unknown error');
+      }
+      setTimeout(() => setSaveStatus({ type: '', message: '' }), 2000);
     } catch (error) {
-      console.error('Failed to save settings:', error);
+      setSaveStatus({ type: 'error', message: 'Auto-save failed: ' + error.message });
+      setTimeout(() => setSaveStatus({ type: '', message: '' }), 3000);
     }
   };
+
+  // Remove the manual save function since we're using auto-save
 
   const selectDownloadPath = async () => {
     try {
@@ -87,29 +117,6 @@ const Settings = () => {
           label: 'Minimize to system tray',
           type: 'toggle',
           description: 'Minimize to system tray instead of closing when you click the X button'
-        },
-        {
-          key: 'theme',
-          label: 'Theme',
-          type: 'select',
-          options: [
-            { value: 'light', label: 'Light' },
-            { value: 'dark', label: 'Dark' },
-            { value: 'system', label: 'System' }
-          ],
-          description: 'Choose your preferred theme'
-        },
-        {
-          key: 'language',
-          label: 'Language',
-          type: 'select',
-          options: [
-            { value: 'en', label: 'English' },
-            { value: 'es', label: 'Español' },
-            { value: 'fr', label: 'Français' },
-            { value: 'de', label: 'Deutsch' }
-          ],
-          description: 'Choose your preferred language'
         }
       ]
     },
@@ -239,23 +246,68 @@ const Settings = () => {
     }
   };
 
+  // Show loading state while settings are being loaded
+  if (isLoading || !settings) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                  <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
+          <p className="text-sm sm:text-base text-gray-600">Configure your application preferences (auto-saved)</p>
+        </div>
+        </div>
+        
+        <div className="flex items-center justify-center py-12">
+          <div className="flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+            <span className="text-gray-600">Loading settings...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="text-sm sm:text-base text-gray-600">Configure your application preferences</p>
+          <p className="text-sm sm:text-base text-gray-600">Configure your application preferences (auto-saved)</p>
         </div>
         
         <div className="flex items-center space-x-3">
-          <button
-            onClick={handleSaveSettings}
-            className="btn-primary text-sm"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Settings
-          </button>
+          {saveStatus.type && (
+            <div className={`px-3 py-2 rounded-lg text-sm ${
+              saveStatus.type === 'success' 
+                ? 'bg-green-50 text-green-800 border border-green-200' 
+                : saveStatus.type === 'error'
+                ? 'bg-red-50 text-red-800 border border-red-200'
+                : 'bg-blue-50 text-blue-800 border border-blue-200'
+            }`}>
+              {saveStatus.message}
+            </div>
+          )}
+          {/* Debug button - remove this in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <button
+              onClick={async () => {
+                console.log('Current settings:', settings);
+                console.log('Last saved settings:', lastSavedSettings);
+                console.log('Settings type:', typeof settings);
+                console.log('Settings keys:', Object.keys(settings || {}));
+                try {
+                  const testResult = await window.electronAPI.testSettings();
+                  console.log('Test settings result:', testResult);
+                } catch (error) {
+                  console.error('Test settings failed:', error);
+                }
+              }}
+              className="btn-secondary text-sm"
+            >
+              Debug
+            </button>
+          )}
         </div>
       </div>
 

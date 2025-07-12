@@ -7,7 +7,8 @@ import {
   Volume2, 
   Settings,
   Wifi,
-  WifiOff
+  WifiOff,
+  QrCode
 } from 'lucide-react';
 import { useDevices } from '../contexts/DeviceContext';
 
@@ -16,6 +17,7 @@ const Sidebar = () => {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Dashboard' },
+    { path: '/qr', icon: QrCode, label: 'QR Code' },
     { path: '/devices', icon: Smartphone, label: 'Devices' },
     { path: '/transfer', icon: FolderOpen, label: 'File Transfer' },
     { path: '/multimedia', icon: Volume2, label: 'Multimedia' },
