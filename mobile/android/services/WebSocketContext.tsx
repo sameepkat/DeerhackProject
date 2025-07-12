@@ -94,6 +94,9 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           DeviceStorage.saveDevice(newDevice);
           setConnectingDevice(null); // Clear connecting device on success
 
+          // After pairing, ask the server for its hostname
+          ws.send(JSON.stringify({ type: 'get_hostname' }));
+
         // Case 3: Pairing fails
         } else if (message.type === 'pair_failed') {
           console.error('Pairing failed:', message.message);

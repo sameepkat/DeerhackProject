@@ -28,6 +28,11 @@ export default function DevicesScreen() {
     }, [])
   );
 
+  useEffect(() => {
+    // Reload devices to reflect the latest status (e.g., name update after connection)
+    loadDevices();
+  }, [connectedDevice]);
+
   const loadDevices = async () => {
     const loadedDevices = await DeviceStorage.getAllDevices();
     setDevices(loadedDevices);
