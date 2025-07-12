@@ -4,13 +4,13 @@ import qrcode
 
 class QRUtils:
     @staticmethod
-    def generate_qr_code(data):
+    def generate_qr_code(data, box_size=1.0):
         """Generate QR code for terminal display."""
         try:
             qr = qrcode.QRCode(
                 version=1,
                 error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=1,
+                box_size=box_size,
                 border=1,
             )
             qr.add_data(json.dumps(data))
