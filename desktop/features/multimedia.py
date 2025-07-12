@@ -1,6 +1,7 @@
 from enum import Enum
 import platform
 import subprocess
+import os
 
 class Brightness(Enum):
     BUP = "+10"
@@ -23,13 +24,21 @@ def set_brightness(bright_val: Brightness):
             print(f"✅ New Brightness: {sbc.get_brightness(display=0)[0]}%")
         except Exception as e:
             print("❌ Error controlling brightness on Windows:", e)
+
     elif platform.system() == 'Darwin':  # macOS
         try:
-            script_path = "scripts/brighten.applescript" if bright_val == Brightness.BUP else "scripts/dim.applescript"
+            # Resolve absolute path to the 'scripts' folder relative to multimedia.py
+            script_dir = os.path.join(os.path.dirname(__file__), "scripts")
+            script_filename = "brighten.applescript" if bright_val == Brightness.BUP else "dim.applescript"
+            script_path = os.path.join(script_dir, script_filename)
+
+            # Read and run AppleScript
             with open(script_path) as f:
                 script = f.read()
+
             subprocess.run(['osascript', '-e', script], check=True)
             print(f"✅ Ran macOS AppleScript: {bright_val.name}")
+
         except Exception as e:
             print("❌ Error running AppleScript on macOS:", e)
     
@@ -116,22 +125,3 @@ def set_volume(vol_val: Volume):
                 print("❌ Failed to set volume on Linux (pactl):", e2)
         except Exception as e:
             print("❌ Other error on Linux:", e)
-
-def test_bright():
-    val = input("enter 1 for up and 0 for down: ")
-    if val == "1":
-        set_brightness(Brightness.BUP)
-    elif val == "0":
-        set_brightness(Brightness.BDOWN)
-
-def test_vol():
-    val = input("enter 1 for volup and 0 for voldown: ")
-    if val == "1":
-        set_volume(Volume.VUP)
-    elif val == "0":
-        set_volume(Volume.VDOWN)
-
-if __name__ == "__main__":
-    while True:
-        test_vol()
-        # test_bright()

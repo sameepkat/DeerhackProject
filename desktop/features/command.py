@@ -68,25 +68,3 @@ def run_command(cmd: Union[str, List[str]], **kwargs) -> subprocess.CompletedPro
             )
         # Re-raise with original error info
         raise e
-
-# Example usage and testing
-if __name__ == "__main__":
-    # Test cases
-    test_commands = [
-        "ls -la",           # Should work
-        "echo 'Hello'",     # Should work
-        "sudo ls",          # Should fail - blocked
-        "apt update",       # Should fail with permission error + note
-        "python --version", # Should work
-    ]
-    
-    for cmd in test_commands:
-        try:
-            result = run_command(cmd)
-            print(f"✓ '{cmd}' -> {result.stdout.strip()}")
-        except SudoCommandError as e:
-            print(f"✗ '{cmd}' -> BLOCKED: {e}")
-        except subprocess.CalledProcessError as e:
-            print(f"✗ '{cmd}' -> FAILED: {e}")
-        except Exception as e:
-            print(f"✗ '{cmd}' -> ERROR: {e}")

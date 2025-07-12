@@ -61,17 +61,3 @@ def track_cursor_polling():
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nStopping cursor tracker...")
-
-
-
-print("Starting cursor tracker...")
-print("Press Ctrl+C to stop")
-
-try:
-    track_cursor_pynput()
-except KeyboardInterrupt:
-    print("\nStopping cursor tracker...")
-except Exception as e:
-    print(f"Error: {e}")
-    print("Trying polling method...")
-    track_cursor_polling()

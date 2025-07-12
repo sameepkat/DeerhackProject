@@ -1,7 +1,7 @@
 # Clipboard sync (receive/update)
 import pyperclip
 
-def clipboard():
+def paper_clipboard():
     try:
         clipboard_content = pyperclip.paste()
         print(f"Clipboard content: {clipboard_content}")

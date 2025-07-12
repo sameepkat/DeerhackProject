@@ -51,6 +51,7 @@ python-dateutil==2.9.0.post0
 python-magic==0.4.27
 pytweening==1.2.0
 pyzmq==27.0.0
+qrcode
 requests==2.32.4
 rubicon-objc==0.5.1
 runcmd==2020.12.3
