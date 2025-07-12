@@ -14,6 +14,7 @@ import threading
 
 from ..utils import QRUtils
 from ..features import send_clipboard, recieve_clipboard, press_key, run_command, set_volume, set_brightness, media_playback, Brightness, Volume, Media
+from ..features.mouse_keyboard import move_cursor
 
 # Add file transfer tracking
 file_transfers = {}  # Track active file transfers
@@ -241,6 +242,12 @@ async def process_message(websocket, data, client_ip):
         print("Media message received")
         action = data.get('action', '')
         response = await handle_media(action,data, client_ip)
+        await websocket.send(json.dumps(response))
+        
+    elif msg_type == "remote_input":
+        print("🖱️ Remote input message received from", client_ip)
+        print("📦 Data received:", data)
+        response = await handle_remote_input(data, client_ip)
         await websocket.send(json.dumps(response))
 
     # File transfer messages
@@ -608,6 +615,50 @@ async def handle_key_press(key, client_ip):
         'key': key,
         'message': 'Key pressed'
     }
+
+async def handle_remote_input(data, client_ip):
+    """Handle remote input (touchpad) operations."""
+    fingerX = data.get('fingerX', 0)
+    fingerY = data.get('fingerY', 0)
+    normalizedX = data.get('normalizedX', 0)
+    normalizedY = data.get('normalizedY', 0)
+    touchpadWidth = data.get('touchpadWidth', 280)
+    touchpadHeight = data.get('touchpadHeight', 220)
+    
+    print(f'Remote input from {client_ip}: fingerX={fingerX}, fingerY={fingerY}, normalized=({normalizedX}, {normalizedY})')
+    
+    # Get current screen dimensions
+    import pyautogui
+    screen_width, screen_height = pyautogui.size()
+    
+    # Calculate target cursor position on screen based on finger position
+    targetX = int(normalizedX * screen_width)
+    targetY = int(normalizedY * screen_height)
+    
+    # Get current cursor position
+    currentX, currentY = pyautogui.position()
+    
+    # Calculate the delta movement needed
+    deltaX = targetX - currentX
+    deltaY = targetY - currentY
+    
+    # Use the existing move_cursor function from mouse_keyboard.py
+    success = move_cursor(deltaX, deltaY)
+    
+    if success:
+        print(f'✅ Cursor moved to: ({targetX}, {targetY}) based on finger position ({fingerX}, {fingerY})')
+        return {
+            'type': 'remote_input_response',
+            'status': 'success',
+            'message': f'Cursor moved to ({targetX}, {targetY})'
+        }
+    else:
+        print(f'❌ Error moving cursor')
+        return {
+            'type': 'remote_input_response',
+            'status': 'error',
+            'message': 'Failed to move cursor'
+        }
 
 async def handle_connection(websocket):  # Fixed: removed 'path' parameter
     """Handle WebSocket connection."""

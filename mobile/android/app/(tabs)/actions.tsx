@@ -56,7 +56,7 @@ const features = [
 type FeatureType = typeof features[number];
 
 export default function ActionsScreen() {
-  const { send, connected, lastMessage } = useWebSocket();
+  const { send, connected, lastMessage, ws } = useWebSocket();
   const [clipboardValue, setClipboardValue] = useState('');
   const [status, setStatus] = useState('');
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
@@ -219,36 +219,74 @@ export default function ActionsScreen() {
 
   const panResponder = React.useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt, gestureState) => {
-        // Store initial gesture state
-        lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
+      onStartShouldSetPanResponder: () => {
+        console.log('🖱️ PanResponder Start triggered');
+        return true;
       },
+      onMoveShouldSetPanResponder: () => {
+        console.log('🖱️ PanResponder Move should trigger');
+        return true;
+      },
+              onPanResponderGrant: (evt, gestureState) => {
+          console.log('🖱️ PanResponder Grant triggered');
+          // Store initial gesture state
+          lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
+        },
       onPanResponderMove: (evt, gestureState) => {
-        // Calculate the delta since the last move
-        const dx = (gestureState.dx - lastGestureStateRef.current.x) * sensitivity;
-        const dy = (gestureState.dy - lastGestureStateRef.current.y) * sensitivity;
-
+        console.log('🖱️ PanResponder Move triggered');
+        console.log('📱 Event nativeEvent:', evt.nativeEvent);
+        console.log('📱 GestureState:', gestureState);
+        
+        // Get the touchpad area dimensions and finger position relative to it
+        const touchpadWidth = 280; // From styles.touchpad width
+        const touchpadHeight = 220; // From styles.touchpad height
+        
+        // Get finger position from the event's nativeEvent
+        const fingerX = Math.max(0, Math.min(touchpadWidth, evt.nativeEvent.locationX));
+        const fingerY = touchpadHeight - Math.max(0, Math.min(touchpadHeight, evt.nativeEvent.locationY)); // Invert Y so bottom-left is origin
+        
+        // Calculate normalized position (0-1)
+        const normalizedX = fingerX / touchpadWidth;
+        const normalizedY = fingerY / touchpadHeight;
+        
+        console.log('📍 Calculated positions:', {
+          fingerX,
+          fingerY,
+          normalizedX,
+          normalizedY,
+          touchpadWidth,
+          touchpadHeight
+        });
+        
         // Update the ref for the next event
         lastGestureStateRef.current = { x: gestureState.dx, y: gestureState.dy };
 
-        if (connected) {
-          const data = {
-            type: 'remote_input',
-            dx,
-            dy,
-          };
-          console.log('Sending remote_input:', data);
-          send(
-            JSON.stringify(data)
-          );
+        // Send data regardless of connection status since WebSocket is working
+        const data = {
+          type: 'remote_input',
+          fingerX: Math.round(fingerX),
+          fingerY: Math.round(fingerY),
+          normalizedX: Math.round(normalizedX * 100) / 100, // Round to 2 decimal places
+          normalizedY: Math.round(normalizedY * 100) / 100,
+          touchpadWidth,
+          touchpadHeight,
+        };
+        console.log('📤 Sending remote_input:', data);
+        
+        // Send directly to WebSocket if available
+        if (ws) {
+          ws.send(JSON.stringify(data));
+          console.log('✅ Data sent via WebSocket');
+        } else {
+          console.log('❌ WebSocket not available, trying send function');
+          send(JSON.stringify(data));
         }
       },
-      onPanResponderRelease: () => {
-        // Reset the gesture state on release
-        lastGestureStateRef.current = { x: 0, y: 0 };
-      },
+              onPanResponderRelease: () => {
+          console.log('🖱️ PanResponder Release triggered');
+          // Reset the gesture state on release
+          lastGestureStateRef.current = { x: 0, y: 0 };
+        },
     })
   ).current;
 
@@ -480,6 +518,20 @@ export default function ActionsScreen() {
               {...panResponder.panHandlers}
             >
               <Text style={styles.touchpadText}>Touchpad Area</Text>
+              <Text style={[styles.touchpadText, { fontSize: 12, marginTop: 8, color: connected ? '#4CAF50' : '#F44336' }]}>
+                {connected ? '🟢 Connected' : '🔴 Disconnected'}
+              </Text>
+              {!connected && (
+                <TouchableOpacity 
+                  style={{ marginTop: 8, padding: 8, backgroundColor: '#1976d2', borderRadius: 8 }}
+                  onPress={() => {
+                    console.log('🔄 Attempting to reconnect...');
+                    // You might need to implement a reconnect function
+                  }}
+                >
+                  <Text style={{ color: 'white', fontSize: 12 }}>Reconnect</Text>
+                </TouchableOpacity>
+              )}
             </View>
             <Text style={styles.mediaLabel}>Sensitivity: {sensitivity.toFixed(2)}</Text>
             <View style={styles.sensitivityRow}>

@@ -48,6 +48,16 @@ def track_cursor_polling():
     except KeyboardInterrupt:
         print("\nStopping cursor tracker...")
 
+def move_cursor(dx, dy):
+    """Move cursor by relative amount using pyautogui."""
+    try:
+        pyautogui.moveRel(dx, dy, duration=0.01)
+        print(f"✅ Cursor moved: dx={dx}, dy={dy}")
+        return True
+    except Exception as e:
+        print(f"❌ Error moving cursor: {e}")
+        return False
+
 def press_key(key):
     pyautogui.PAUSE = 0.1
     try:

@@ -23,6 +23,11 @@ const WebSocketContext = createContext<WebSocketContextType | undefined>(undefin
 export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const wsRef = useRef<WebSocket | null>(null);
   const [connected, setConnected] = useState(false);
+  
+  // Debug connection state changes
+  useEffect(() => {
+    console.log('🔗 Connection state changed to:', connected);
+  }, [connected]);
   const [lastMessage, setLastMessage] = useState<string | null>(null);
   const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
   const [connectingDevice, setConnectingDevice] = useState<Device | null>(null); // New state
@@ -31,6 +36,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const hasInitialAutoConnectRef = useRef(false);
 
   const disconnect = useCallback(() => {
+    console.log('🔗 Disconnecting WebSocket');
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -73,12 +79,13 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         
         // Case 2: Pairing is successful (for both manual and auto-connect)
         } else if (message.type === 'pair_success' && message.server_info) {
+          console.log('🔗 Setting connected to true - pairing successful');
           setConnected(true);
           const { server_ip, port_no, pairing_token } = message.server_info;
           const deviceId = DeviceStorage.generateDeviceId(server_ip, String(port_no));
           
           // Use the connecting device's info to preserve name and hostType
-          const baseDevice = connectingDevice || {};
+          const baseDevice = connectingDevice || { name: server_ip };
 
           const newDevice: Device = {
             id: deviceId,
@@ -133,10 +140,10 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   }, [connect]);
 
   const send = useCallback((data: string) => {
-    if (wsRef.current && connected) {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(data);
     }
-  }, [connected]);
+  }, []);
 
   const startAutoConnect = useCallback(async () => {
     if (connected || isAutoConnecting) {
