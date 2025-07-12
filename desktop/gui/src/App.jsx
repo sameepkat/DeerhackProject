@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+
 import Sidebar from './components/Sidebar';
 import MobileNav from './components/MobileNav';
 import Dashboard from './pages/Dashboard';
+import QRCode from './components/QRCode';
 import Devices from './pages/Devices';
 import FileTransfer from './pages/FileTransfer';
 import MultimediaControl from './pages/MultimediaControl';
@@ -128,6 +130,7 @@ function App() {
               <div className="p-4 lg:p-6">
                 <Routes>
                   <Route path="/" element={<Dashboard />} />
+                  <Route path="/qr" element={<QRCode />} />
                   <Route path="/devices" element={<Devices />} />
                   <Route path="/transfer" element={<FileTransfer />} />
                   <Route path="/multimedia" element={<MultimediaControl />} />

@@ -7,7 +7,10 @@ import {
   Wifi,
   Activity,
   Clock,
-  FileText
+  FileText,
+  QrCode,
+  FolderOpen,
+  Settings
 } from 'lucide-react';
 import { useDevices } from '../contexts/DeviceContext';
 import { useTransfer } from '../contexts/TransferContext';
@@ -36,31 +39,38 @@ const Dashboard = () => {
 
   const quickActions = [
     {
-      icon: Upload,
-      title: 'Send Files',
-      description: 'Transfer files to connected devices',
-      action: () => window.location.href = '/transfer',
+      icon: QrCode,
+      title: 'QR Code',
+      description: 'Connect mobile devices via QR code',
+      action: () => window.location.href = '/qr',
+      color: 'bg-purple-500'
+    },
+    {
+      icon: Smartphone,
+      title: 'Devices',
+      description: 'View and manage connected devices',
+      action: () => window.location.href = '/devices',
       color: 'bg-blue-500'
     },
     {
-      icon: Download,
-      title: 'Receive Files',
-      description: 'Accept incoming file transfers',
+      icon: FolderOpen,
+      title: 'File Transfer',
+      description: 'Send and receive files',
       action: () => window.location.href = '/transfer',
       color: 'bg-green-500'
     },
     {
       icon: Volume2,
-      title: 'Multimedia Control',
+      title: 'Multimedia',
       description: 'Control volume and brightness',
       action: () => window.location.href = '/multimedia',
       color: 'bg-yellow-500'
     },
     {
-      icon: Smartphone,
-      title: 'Manage Devices',
-      description: 'View and manage connected devices',
-      action: () => window.location.href = '/devices',
+      icon: Settings,
+      title: 'Settings',
+      description: 'Configure app preferences',
+      action: () => window.location.href = '/settings',
       color: 'bg-orange-500'
     }
   ];
@@ -128,7 +138,7 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div>
         <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {quickActions.map((action, index) => (
             <button
               key={index}
