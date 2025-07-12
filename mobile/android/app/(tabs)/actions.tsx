@@ -62,13 +62,11 @@ export default function ActionsScreen() {
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
   const [presentationModalVisible, setPresentationModalVisible] = useState(false);
   const [commandModalVisible, setCommandModalVisible] = useState(false);
-  const [volume, setVolume] = useState(50);
   const [commandInput, setCommandInput] = useState('');
   const [commandOutput, setCommandOutput] = useState<string[]>([]);
   const [remoteInputModalVisible, setRemoteInputModalVisible] = useState(false);
   const [sensitivity, setSensitivity] = useState(1);
   const [fileProgress, setFileProgress] = useState<FileProgress | null>(null);
-  const [brightness, setBrightness] = useState(50);
   const lastGestureStateRef = React.useRef({ x: 0, y: 0 });
   const [clipboardModalVisible, setClipboardModalVisible] = useState(false);
   const [receivedClipboard, setReceivedClipboard] = useState('');
@@ -162,17 +160,17 @@ export default function ActionsScreen() {
     // Add more feature actions here
   };
 
-  const handleMediaAction = (action: string, value?: number) => {
+  const handleMediaAction = (action: string, direction?: string) => {
     if (!connected) {
       setStatus('Not connected to server');
       return;
     }
-    if (action === 'volume' && typeof value === 'number') {
-      send(JSON.stringify({ type: 'media', action: 'volume', value }));
-      setStatus(`Volume set to ${value}`);
-    } else if (action === 'brightness' && typeof value === 'number') {
-      send(JSON.stringify({ type: 'media', action: 'brightness', value }));
-      setStatus(`Brightness set to ${value}`);
+    if (action === 'volume' && direction) {
+      send(JSON.stringify({ type: 'media', action: 'volume', value: direction }));
+      setStatus(`Volume ${direction === '+' ? 'increased' : 'decreased'}`);
+    } else if (action === 'brightness' && direction) {
+      send(JSON.stringify({ type: 'media', action: 'brightness', value: direction }));
+      setStatus(`Brightness ${direction === '+' ? 'increased' : 'decreased'}`);
     } else {
       send(JSON.stringify({ type: 'media', action }));
       setStatus(`Media action: ${action}`);
@@ -360,62 +358,42 @@ export default function ActionsScreen() {
                 <Text style={styles.mediaButtonText}>⏹️</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.mediaLabel}>Volume</Text>
+            {/* <Text style={styles.mediaLabel}>Volume</Text> */}
             <View style={styles.volumeRow}>
               <TouchableOpacity
-                style={[styles.volumeButton, volume <= 0 && styles.volumeButtonDisabled]}
+                style={styles.volumeButton}
                 onPress={() => {
-                  if (volume > 0) {
-                    const newVol = Math.max(0, volume - 5);
-                    setVolume(newVol);
-                    handleMediaAction('volume', newVol);
-                  }
+                  handleMediaAction('volume', '-');
                 }}
-                disabled={volume <= 0}
               >
                 <Text style={styles.volumeButtonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.volumeValue}>{volume}</Text>
+              <Text style={styles.volumeValue}>Volume</Text>
               <TouchableOpacity
-                style={[styles.volumeButton, volume >= 100 && styles.volumeButtonDisabled]}
+                style={styles.volumeButton}
                 onPress={() => {
-                  if (volume < 100) {
-                    const newVol = Math.min(100, volume + 5);
-                    setVolume(newVol);
-                    handleMediaAction('volume', newVol);
-                  }
+                  handleMediaAction('volume', '+');
                 }}
-                disabled={volume >= 100}
               >
                 <Text style={styles.volumeButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.mediaLabel}>Brightness</Text>
+            {/* <Text style={styles.mediaLabel}>Brightness</Text> */}
             <View style={styles.volumeRow}>
               <TouchableOpacity
-                style={[styles.volumeButton, brightness <= 0 && styles.volumeButtonDisabled]}
+                style={styles.volumeButton}
                 onPress={() => {
-                  if (brightness > 0) {
-                    const newBrightness = Math.max(0, brightness - 5);
-                    setBrightness(newBrightness);
-                    handleMediaAction('brightness', newBrightness);
-                  }
+                  handleMediaAction('brightness', '-');
                 }}
-                disabled={brightness <= 0}
               >
                 <Text style={styles.volumeButtonText}>-</Text>
               </TouchableOpacity>
-              <Text style={styles.volumeValue}>{brightness}</Text>
+              <Text style={styles.volumeValue}>Brightness</Text>
               <TouchableOpacity
-                style={[styles.volumeButton, brightness >= 100 && styles.volumeButtonDisabled]}
+                style={styles.volumeButton}
                 onPress={() => {
-                  if (brightness < 100) {
-                    const newBrightness = Math.min(100, brightness + 5);
-                    setBrightness(newBrightness);
-                    handleMediaAction('brightness', newBrightness);
-                  }
+                  handleMediaAction('brightness', '+');
                 }}
-                disabled={brightness >= 100}
               >
                 <Text style={styles.volumeButtonText}>+</Text>
               </TouchableOpacity>
