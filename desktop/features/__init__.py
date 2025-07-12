@@ -4,7 +4,7 @@
 """
 from desktop import features
 """
-# and use
+# and Use
 """
 features.clipboard()
 """
