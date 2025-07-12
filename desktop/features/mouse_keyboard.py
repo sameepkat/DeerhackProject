@@ -2,20 +2,6 @@
 import pyautogui
 import time
 
-def track_cursor_polling():
-    print("Using polling method (fallback for permission issues)")
-    last_pos = None
-    
-    try:
-        while True:
-            x, y = pyautogui.position()
-            if last_pos != (x, y):
-                print(f"Cursor position => x: {x}, y: {y}")
-                last_pos = (x, y)
-            time.sleep(0.1)  # Poll every 100ms
-    except KeyboardInterrupt:
-        print("\nStopping cursor tracker...")
-
 
 def track_cursor_pynput():
     """Original method using pynput event listeners"""
@@ -61,3 +47,19 @@ def track_cursor_polling():
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nStopping cursor tracker...")
+
+def press_key(key):
+    pyautogui.PAUSE = 0.1
+    try:
+        if key == 'next':
+            key = 'right'
+        elif key == 'previous':
+            key = 'left'
+        else:
+            key = key
+
+        pyautogui.press(key)
+        return True
+    except Exception as e:
+        print(f"Error pressing key: {e}")
+        return False
