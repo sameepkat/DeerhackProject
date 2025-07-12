@@ -8,7 +8,7 @@ import websockets
 
 
 from ..utils import QRUtils
-from ..features import send_clipboard, recieve_clipboard, press_key, run_command
+from ..features import send_clipboard, recieve_clipboard, press_key, run_command, set_volume, set_brightness, media_playback, Brightness, Volume, Media
 
 def get_local_ip():
     """Get the local IP address of the machine."""
@@ -116,6 +116,12 @@ async def process_message(websocket, data, client_ip):
         response = await handle_key_press(key, client_ip)
         await websocket.send(json.dumps(response))
         
+    elif msg_type == "media":
+        print("Media message received")
+        action = data.get('action', '')
+        response = await handle_media(action,data, client_ip)
+        await websocket.send(json.dumps(response))
+
     else:
         # Unknown message type
         response = {
@@ -123,6 +129,61 @@ async def process_message(websocket, data, client_ip):
             'message': f'Unknown message type: {msg_type}'
         }
         await websocket.send(json.dumps(response))
+
+async def handle_media(command,data, client_ip):
+    """Handle media operations."""
+    print(f'Media {command} from {client_ip}')
+    if command == "volume":
+        if data.get("value","") == "+":
+            set_volume(Volume.VUP)
+            return {
+                "type": "volume_response",
+                "action": "volume",
+                "message": "Volume increased"
+            }
+        elif data.get("value","") == "-":
+            set_volume(Volume.VDOWN)
+            return {
+                "type": "volume_response",
+                "action": "volume",
+                "message": "Volume decreased"
+            }
+    elif command == "brightness":
+        if data.get("value","") == "+":
+            set_brightness(Brightness.BUP)
+            return {
+                "type": "brightness_response",
+                "action": "brightness",
+                "message": "Brightness increased"
+            }
+        elif data.get("value","") == "-":
+            set_brightness(Brightness.BDOWN)
+            return {
+                "type": "brightness_response",
+                "action": "brightness",
+                "message": "Brightness decreased"
+            }
+    elif command == "playpause":
+        media_playback("playpause")
+        return {
+            "type": "media_response",
+            "action": "playpause",
+            "message": "Play/Pause"
+        }
+    elif command == "next":
+        media_playback("next")
+        return {
+            "type": "media_response",
+            "action": "next",
+            "message": "Next"
+        }
+    elif command == "previous":
+        media_playback("previous")
+        return {
+            "type": "media_response",
+            "action": "previous",
+            "message": "Previous"
+        }
 
 async def handle_command(command, client_ip):
     """Handle different device commands."""
