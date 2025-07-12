@@ -1,5 +1,11 @@
-# ANDI MANDI CHANDI, ANDI MANDI CHANDI
-# IF WE DONT WIN U R ...
+# SYNCBRIDGE
+
+<img width="1440" height="846" alt="image" src="https://github.com/user-attachments/assets/b9e3a51c-d4c8-4f5d-b2f7-e3f8d0d015fd" />
+
+<img width="1440" height="846" alt="image" src="https://github.com/user-attachments/assets/9443593b-73bf-4fb8-9a13-cb8b71a3524c" />
+
+<img width="1440" height="844" alt="image" src="https://github.com/user-attachments/assets/9d03f37d-a004-40f6-a4f8-5e2aee3f3356" />
+
 
 # Tags
 
