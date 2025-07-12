@@ -1,4 +1,4 @@
-# SyncConnect - Cross-Device LAN Control System
+# SyncBridge - Cross-Device LAN Control System
 
 A comprehensive cross-platform solution for seamless device connectivity and control over local networks. SyncConnect enables file transfer, presentation control, clipboard synchronization, and multimedia control between desktop, mobile, and web platforms.
 
