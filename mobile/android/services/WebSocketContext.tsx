@@ -46,6 +46,20 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
     ws.onmessage = (event) => {
       setLastMessage(event.data);
+      try {
+        let data = event.data;
+        if (typeof data === 'string' && data.startsWith('Echo: ')) {
+          data = data.substring(6);
+        }
+        const message = JSON.parse(data);
+        if (message.type === 'hostname' && message.hostname) {
+          const deviceId = DeviceStorage.generateDeviceId(ip, port);
+          DeviceStorage.updateDeviceName(deviceId, message.hostname);
+        }
+      } catch (error) {
+        // It's possible not all messages are JSON, so we'll just log the error
+        // console.log('Could not parse server message:', error);
+      }
     };
     ws.onerror = () => {
       setConnected(false);

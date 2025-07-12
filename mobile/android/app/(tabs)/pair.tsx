@@ -67,7 +67,7 @@ export default function PairScreen() {
       port,
       token,
       hostType,
-      name: `${ip}:${port}`, // Default name
+      name: hostType || `${ip}:${port}`,
       lastConnected: Date.now(),
     };
     
@@ -113,7 +113,7 @@ export default function PairScreen() {
           port: portNo,
           token: pairingToken,
           hostType: hostTypeValue,
-          name: `${serverIp}:${portNo}`, // Default name
+          name: hostTypeValue || `${serverIp}:${portNo}`,
           lastConnected: Date.now(),
         };
         
