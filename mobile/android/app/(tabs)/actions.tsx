@@ -318,6 +318,14 @@ export default function ActionsScreen() {
           console.log('Setting received clipboard:', msg.data);
           setReceivedClipboard(msg.data);
           setStatus('Received clipboard from server!');
+          // Set the Android clipboard with the received data
+          Clipboard.setStringAsync(msg.data).then(() => {
+            console.log('✅ Clipboard set successfully');
+            setStatus('Clipboard received and set on device!');
+          }).catch((error) => {
+            console.log('❌ Failed to set clipboard:', error);
+            setStatus('Received clipboard but failed to set on device');
+          });
         }
         // Handle clipboard_request (for set clipboard operations)
         else if (msg.type === 'clipboard_request') {
@@ -332,6 +340,14 @@ export default function ActionsScreen() {
           console.log('Setting received clipboard:', msg.data);
           setReceivedClipboard(msg.data);
           setStatus('Received clipboard from server!');
+          // Set the Android clipboard with the received data
+          Clipboard.setStringAsync(msg.data).then(() => {
+            console.log('✅ Clipboard set successfully');
+            setStatus('Clipboard received and set on device!');
+          }).catch((error) => {
+            console.log('❌ Failed to set clipboard:', error);
+            setStatus('Received clipboard but failed to set on device');
+          });
         } else if (msg.type === 'clipboard' && msg.action === 'set') {
           if (msg.status === 'ok') {
             setStatus('Clipboard sent successfully!');
