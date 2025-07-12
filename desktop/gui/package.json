@@ -1,0 +1,73 @@
+{
+  "name": "connect-desktop",
+  "version": "1.0.0",
+  "description": "A cross-platform desktop application similar to KDE Connect",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"npm run dev:react\" \"wait-on http://localhost:3000 http://localhost:3001 http://localhost:3002 http://localhost:3003 http://localhost:3004 http://localhost:3005 && electron .\"",
+    "dev:react": "vite",
+    "build": "vite build",
+    "build:electron": "electron-builder",
+    "dist": "npm run build && npm run build:electron",
+    "pack": "electron-builder --dir",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux"
+  },
+  "keywords": [
+    "desktop",
+    "cross-platform",
+    "connect",
+    "file-transfer"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "concurrently": "^8.2.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "vite": "^7.0.4",
+    "wait-on": "^7.2.0"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.16",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "lucide-react": "^0.294.0",
+    "multer": "^1.4.5-lts.1",
+    "node-ssdp": "^1.0.0",
+    "postcss": "^8.4.32",
+    "qrcode": "^1.5.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "socket.io": "^4.7.4",
+    "socket.io-client": "^4.7.4",
+    "tailwindcss": "^3.3.6"
+  },
+  "build": {
+    "appId": "com.connect.desktop",
+    "productName": "Connect Desktop",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    }
+  }
+}
