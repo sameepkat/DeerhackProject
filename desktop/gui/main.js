@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -9,6 +10,8 @@ let tray;
 let isDiscovering = false;
 let connectedDevices = [];
 let isQuitting = false; // Flag to track if we're actually quitting
+let pythonProcess = null;
+let pairingInfo = null;
 
 function createMenu() {
   // Create a minimal menu that doesn't include default quit behavior
@@ -393,6 +396,9 @@ function updateTrayMenu() {
 function quitApp() {
   isQuitting = true;
   
+  // Stop Python server before quitting
+  stopPythonServer();
+  
   // Show a brief notification before quitting
   if (Notification.isSupported()) {
     new Notification({
@@ -555,6 +561,8 @@ process.on('SIGINT', (signal) => {
     if (mainWindow) {
       mainWindow.hide();
     }
+  } else {
+    stopPythonServer();
   }
 });
 
@@ -563,6 +571,8 @@ process.on('SIGTERM', (signal) => {
     if (mainWindow) {
       mainWindow.hide();
     }
+  } else {
+    stopPythonServer();
   }
 });
 
@@ -594,8 +604,115 @@ ipcMain.handle('select-files', async () => {
     return result.filePaths;
   } catch (error) {
     console.error('Error in select-files handler:', error);
-    throw error;
+        throw error;
   }
+});
+
+// Python WebSocket server integration
+async function startPythonServer() {
+  try {
+    if (pythonProcess) {
+      console.log('Python server already running');
+      return true;
+    }
+
+    const pythonScriptPath = path.join(__dirname, '..', 'server', 'ws_handler.py');
+    console.log('Starting Python server from:', pythonScriptPath);
+
+    // First, get pairing info immediately
+    try {
+      const pairingInfoProcess = spawn('python3', ['-c', `
+import sys
+sys.path.append('${path.dirname(pythonScriptPath)}')
+from ws_handler import get_pairing_info_only
+import json
+print(json.dumps(get_pairing_info_only()))
+      `], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: path.dirname(pythonScriptPath)
+      });
+
+      let pairingData = '';
+      pairingInfoProcess.stdout.on('data', (data) => {
+        pairingData += data.toString();
+      });
+
+      await new Promise((resolve, reject) => {
+        pairingInfoProcess.on('close', (code) => {
+          if (code === 0) {
+            try {
+              pairingInfo = JSON.parse(pairingData.trim());
+              if (mainWindow) {
+                mainWindow.webContents.send('pairing-info-updated', pairingInfo);
+              }
+              resolve();
+            } catch (error) {
+              console.error('Error parsing pairing info:', error);
+              reject(error);
+            }
+          } else {
+            reject(new Error('Failed to get pairing info'));
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error getting pairing info:', error);
+    }
+
+    // Then start the actual server
+    pythonProcess = spawn('python3', [pythonScriptPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: path.dirname(pythonScriptPath)
+    });
+
+    pythonProcess.stdout.on('data', (data) => {
+      const output = data.toString();
+      console.log('Python server output:', output);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      console.error('Python server error:', data.toString());
+    });
+
+    pythonProcess.on('close', (code) => {
+      console.log('Python server closed with code:', code);
+      pythonProcess = null;
+      pairingInfo = null;
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Failed to start Python server:', error);
+      pythonProcess = null;
+      pairingInfo = null;
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error starting Python server:', error);
+    return false;
+  }
+}
+
+function stopPythonServer() {
+  if (pythonProcess) {
+    pythonProcess.kill();
+    pythonProcess = null;
+    pairingInfo = null;
+  }
+}
+
+// Pairing info handlers
+ipcMain.handle('get-pairing-info', () => {
+  return pairingInfo;
+});
+
+ipcMain.handle('start-python-server', async () => {
+  return await startPythonServer();
+});
+
+ipcMain.handle('stop-python-server', () => {
+  stopPythonServer();
+  return true;
 });
 
 ipcMain.handle('select-folder', async () => {

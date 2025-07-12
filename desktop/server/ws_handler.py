@@ -6,6 +6,7 @@ import string
 import socket
 import websockets
 import base64
+import time
 from pathlib import Path
 
 from ..utils import QRUtils
@@ -527,6 +528,14 @@ async def handle_connection(websocket):  # Fixed: removed 'path' parameter
 def get_pairing_info():
     return pairing_info
 
+def get_pairing_info_only():
+    """Get pairing info without starting the server."""
+    return {
+        'server_ip': get_local_ip(),
+        'port_no': PORT,
+        'pairing_token': TOKEN,
+    }
+
 async def main(stop_event=None):
     """Main server function."""
     print('--- WebSocket Pairing Server ---')
@@ -570,3 +579,7 @@ pairing_info = {
 
 if __name__ == "__main__":
     asyncio.run(main())
+else:
+    # When imported as a module, just initialize the pairing info
+    # The server will be started by the Electron app
+    pass

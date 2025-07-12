@@ -1,47 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { QrCode, RefreshCw, Wifi } from 'lucide-react';
+import { QrCode, RefreshCw, Wifi, Play, Square } from 'lucide-react';
 
 const QRCode = () => {
   const [localIP, setLocalIP] = useState('');
+  const [port, setPort] = useState(9000);
+  const [pairingToken, setPairingToken] = useState('');
   const [qrData, setQrData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [serverRunning, setServerRunning] = useState(false);
 
   useEffect(() => {
-    const getIP = async () => {
+    const initializeServer = async () => {
       try {
         if (window.electronAPI) {
-          const ip = await window.electronAPI.getLocalIP();
-          setLocalIP(ip);
-          // This will be replaced with actual QR generation from Python
-          setQrData(`http://${ip}:3000`);
-        } else {
-          setLocalIP('127.0.0.1');
-          setQrData('http://127.0.0.1:3000');
+          // Start the Python server
+          const started = await window.electronAPI.startPythonServer();
+          if (started) {
+            setServerRunning(true);
+          }
+          
+          // Get initial pairing info
+          const pairingInfo = await window.electronAPI.getPairingInfo();
+          if (pairingInfo) {
+            updatePairingInfo(pairingInfo);
+          }
+          
+          // Listen for pairing info updates
+          window.electronAPI.onPairingInfoUpdated((event, info) => {
+            updatePairingInfo(info);
+          });
         }
       } catch (error) {
-        console.error('Failed to get local IP:', error);
-        setLocalIP('127.0.0.1');
-        setQrData('http://127.0.0.1:3000');
+        console.error('Failed to initialize server:', error);
       }
     };
-    getIP();
+    
+    initializeServer();
+    
+    // Cleanup function
+    return () => {
+      if (window.electronAPI) {
+        window.electronAPI.removeAllListeners('pairing-info-updated');
+      }
+    };
   }, []);
+  
+  const updatePairingInfo = (info) => {
+    if (info.server_ip) setLocalIP(info.server_ip);
+    if (info.port_no) setPort(info.port_no);
+    if (info.pairing_token) setPairingToken(info.pairing_token);
+    
+    // Generate QR data with pairing info
+    if (info.server_ip && info.port_no && info.pairing_token) {
+      const qrDataString = JSON.stringify({
+        ip: info.server_ip,
+        port: info.port_no,
+        token: info.pairing_token
+      });
+      setQrData(qrDataString);
+    }
+  };
 
 
 
   const refreshQR = async () => {
     setIsLoading(true);
     try {
-      // This will be replaced with actual QR refresh logic from Python
       if (window.electronAPI) {
-        const ip = await window.electronAPI.getLocalIP();
-        setLocalIP(ip);
-        setQrData(`http://${ip}:3000`);
+        // Restart the Python server to get fresh pairing info
+        await window.electronAPI.stopPythonServer();
+        const started = await window.electronAPI.startPythonServer();
+        if (started) {
+          setServerRunning(true);
+        }
       }
     } catch (error) {
       console.error('Failed to refresh QR:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const toggleServer = async () => {
+    if (serverRunning) {
+      await window.electronAPI.stopPythonServer();
+      setServerRunning(false);
+    } else {
+      const started = await window.electronAPI.startPythonServer();
+      setServerRunning(started);
     }
   };
 
@@ -54,8 +100,21 @@ const QRCode = () => {
           <p className="text-sm sm:text-base text-gray-600">Scan to connect your mobile device</p>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span className="text-sm text-gray-600">Ready to connect</span>
+          <div className={`w-3 h-3 rounded-full ${serverRunning ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="text-sm text-gray-600">
+            {serverRunning ? 'Server running' : 'Server stopped'}
+          </span>
+          <button
+            onClick={toggleServer}
+            className="ml-2 p-1 rounded hover:bg-gray-100 transition-colors"
+            title={serverRunning ? 'Stop server' : 'Start server'}
+          >
+            {serverRunning ? (
+              <Square className="w-4 h-4 text-red-600" />
+            ) : (
+              <Play className="w-4 h-4 text-green-600" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -80,9 +139,21 @@ const QRCode = () => {
               {/* This div will be replaced with actual QR code from Python */}
               <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center">
                 <div className="text-center">
-                  <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">QR Code will appear here</p>
-                  <p className="text-xs text-gray-400 mt-1">Generated from Python</p>
+                  {serverRunning && qrData ? (
+                    <div>
+                      <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-green-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-700 font-medium">QR Code Ready</p>
+                      <p className="text-xs text-gray-500 mt-1">Scan to connect</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        {serverRunning ? 'Initializing...' : 'Start server to generate QR'}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">Waiting for pairing info</p>
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -114,8 +185,22 @@ const QRCode = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-mono text-sm text-gray-900">{localIP}</p>
-                    <p className="text-xs text-gray-500">Port: 3000</p>
+                    <p className="font-mono text-sm text-gray-900">{localIP || 'Loading...'}</p>
+                    <p className="text-xs text-gray-500">Port: {port}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <QrCode className="w-5 h-5 text-green-600" />
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm">Pairing Token</p>
+                      <p className="text-xs text-gray-600">Security token for device pairing</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-mono text-sm text-gray-900">{pairingToken || 'Loading...'}</p>
+                    <p className="text-xs text-gray-500">Auto-generated</p>
                   </div>
                 </div>
               </div>

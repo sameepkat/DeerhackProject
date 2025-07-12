@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Network operations
   getLocalIP: () => ipcRenderer.invoke('get-local-ip'),
   
+  // Python server operations
+  getPairingInfo: () => ipcRenderer.invoke('get-pairing-info'),
+  startPythonServer: () => ipcRenderer.invoke('start-python-server'),
+  stopPythonServer: () => ipcRenderer.invoke('stop-python-server'),
+  
   // Device discovery
   startDiscovery: () => ipcRenderer.invoke('start-discovery'),
   stopDiscovery: () => ipcRenderer.invoke('stop-discovery'),
@@ -48,6 +53,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onMessageReceived: (callback) => ipcRenderer.on('message-received', callback),
   onTransferProgress: (callback) => ipcRenderer.on('transfer-progress', callback),
   onTrayAction: (callback) => ipcRenderer.on('tray-action', callback),
+  onPairingInfoUpdated: (callback) => ipcRenderer.on('pairing-info-updated', callback),
   
   // Remove listeners
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
