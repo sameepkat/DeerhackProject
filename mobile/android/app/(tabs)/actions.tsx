@@ -365,12 +365,25 @@ export default function ActionsScreen() {
             onPress={() => handleFeaturePress(feature)}
             activeOpacity={0.7}
           >
-            <IconSymbol name={feature.icon} size={36} color="#444" style={styles.cardIcon} />
+            <IconSymbol name={feature.icon} size={36} color="#1976d2" style={styles.cardIcon} />
             <Text style={styles.cardLabel}>{feature.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={styles.status}>{status}</Text>
+      <Text
+        style={[
+          styles.status,
+          status.includes('fail') || status.includes('error') || status.includes('not connected')
+            ? { color: '#f44336' }
+            : status.includes('sent') || status.includes('success') || status.includes('received')
+            ? { color: 'green' }
+            : status.includes('request') || status.includes('connect')
+            ? { color: '#1976d2' }
+            : { color: '#1976d2' },
+        ]}
+      >
+        {status}
+      </Text>
       {fileProgress && (
         <Text style={styles.status}>
           Sending file: {((fileProgress.sent / fileProgress.total) * 100).toFixed(1)}%
@@ -392,45 +405,42 @@ export default function ActionsScreen() {
                 <Text style={styles.mediaButtonText}>⏭️</Text>
               </TouchableOpacity>
             </View>
-
-            {/* <Text style={styles.mediaLabel}>Volume</Text> */}
             <View style={styles.volumeRow}>
               <TouchableOpacity
-                style={styles.volumeButton}
+                style={styles.mediaButton}
                 onPress={() => {
                   handleMediaAction('volume', '-');
                 }}
               >
-                <Text style={styles.volumeButtonText}>-</Text>
+                <Text style={styles.mediaButtonText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.volumeValue}>Volume</Text>
               <TouchableOpacity
-                style={styles.volumeButton}
+                style={styles.mediaButton}
                 onPress={() => {
                   handleMediaAction('volume', '+');
                 }}
               >
-                <Text style={styles.volumeButtonText}>+</Text>
+                <Text style={styles.mediaButtonText}>+</Text>
               </TouchableOpacity>
             </View>
-            {/* <Text style={styles.mediaLabel}>Brightness</Text> */}
             <View style={styles.volumeRow}>
               <TouchableOpacity
-                style={styles.volumeButton}
+                style={styles.mediaButton}
                 onPress={() => {
                   handleMediaAction('brightness', '-');
                 }}
               >
-                <Text style={styles.volumeButtonText}>-</Text>
+                <Text style={styles.mediaButtonText}>-</Text>
               </TouchableOpacity>
               <Text style={styles.volumeValue}>Brightness</Text>
               <TouchableOpacity
-                style={styles.volumeButton}
+                style={styles.mediaButton}
                 onPress={() => {
                   handleMediaAction('brightness', '+');
                 }}
               >
-                <Text style={styles.volumeButtonText}>+</Text>
+                <Text style={styles.mediaButtonText}>+</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setMediaModalVisible(false)}>
@@ -442,14 +452,14 @@ export default function ActionsScreen() {
       {/* Presentation Remote Modal */}
       <Modal visible={presentationModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.presentationModal}>
+          <View style={styles.mediaModal}>
             <Text style={styles.mediaTitle}>Presentation Remote</Text>
-            <View style={styles.presentationRow}>
-              <TouchableOpacity style={styles.presentationButton} onPress={() => handlePresentationAction('previous')}>
-                <Text style={styles.presentationButtonText}>⬅️</Text>
+            <View style={styles.mediaRow}>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handlePresentationAction('previous')}>
+                <Text style={styles.mediaButtonText}>⬅️</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.presentationButton} onPress={() => handlePresentationAction('next')}>
-                <Text style={styles.presentationButtonText}>➡️</Text>
+              <TouchableOpacity style={styles.mediaButton} onPress={() => handlePresentationAction('next')}>
+                <Text style={styles.mediaButtonText}>➡️</Text>
               </TouchableOpacity>
             </View>
             <TouchableOpacity style={styles.closeButton} onPress={() => setPresentationModalVisible(false)}>
@@ -485,8 +495,8 @@ export default function ActionsScreen() {
               </View>
             </View>
             <View style={styles.terminalInputActions}>
-              <TouchableOpacity style={styles.terminalSendButton} onPress={handleSendCommand}>
-                <Text style={styles.terminalSendButtonText}>Send</Text>
+              <TouchableOpacity style={styles.mediaButton} onPress={handleSendCommand}>
+                <Text style={styles.mediaButtonText}>Send</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.closeButton} onPress={() => setCommandModalVisible(false)}>
                 <Text style={styles.closeButtonText}>Close</Text>
@@ -518,7 +528,7 @@ export default function ActionsScreen() {
               {...panResponder.panHandlers}
             >
               <Text style={styles.touchpadText}>Touchpad Area</Text>
-              <Text style={[styles.touchpadText, { fontSize: 12, marginTop: 8, color: connected ? '#4CAF50' : '#F44336' }]}>
+              <Text style={[styles.touchpadText, { fontSize: 12, marginTop: 8, color: connected ? '#4CAF50' : '#F44336' }]}> 
                 {connected ? '🟢 Connected' : '🔴 Disconnected'}
               </Text>
               {!connected && (
@@ -526,7 +536,6 @@ export default function ActionsScreen() {
                   style={{ marginTop: 8, padding: 8, backgroundColor: '#1976d2', borderRadius: 8 }}
                   onPress={() => {
                     console.log('🔄 Attempting to reconnect...');
-                    // You might need to implement a reconnect function
                   }}
                 >
                   <Text style={{ color: 'white', fontSize: 12 }}>Reconnect</Text>
@@ -557,7 +566,7 @@ export default function ActionsScreen() {
       {/* Clipboard Modal */}
       <Modal visible={clipboardModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.mediaModal, { alignItems: 'stretch' }]}>
+          <View style={[styles.mediaModal, { alignItems: 'stretch' }]}> 
             <Text style={styles.mediaTitle}>Clipboard Sync</Text>
             <TouchableOpacity style={styles.mediaButton} onPress={handleSendClipboard}>
               <Text style={styles.mediaButtonText}>📤 Send Clipboard</Text>
@@ -607,29 +616,36 @@ const styles = StyleSheet.create({
   card: {
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f2f2f2',
-    borderRadius: 12,
+    backgroundColor: 'white',
+    borderRadius: 16,
     padding: 20,
     margin: 8,
     width: 120,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    borderWidth: 2,
+    borderColor: '#e3f2fd',
+    // On press, borderColor will be #1976d2
   },
   cardIcon: {
     marginBottom: 8,
+    color: '#1976d2', // Blue icons
   },
   cardLabel: {
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+    color: '#222',
   },
   status: {
     marginTop: 12,
     fontSize: 16,
-    color: 'green',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    // Color will be set dynamically
   },
 
   modalOverlay: {
@@ -672,7 +688,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   mediaButton: {
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#1976d2',
     borderRadius: 32,
     padding: 18,
     marginHorizontal: 12,
@@ -682,8 +698,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   mediaButtonText: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
+    color: 'white',
   },
   volumeRow: {
     flexDirection: 'row',
@@ -845,7 +862,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   touchpad: {
-    backgroundColor: '#222',
+    backgroundColor: '#fff',
     borderRadius: 16,
     width: 280,
     height: 220,
@@ -856,9 +873,10 @@ const styles = StyleSheet.create({
     borderColor: '#1976d2',
   },
   touchpadText: {
-    color: '#b9f18d',
+    color: '#1976d2',
     fontFamily: 'monospace',
     fontSize: 16,
+    fontWeight: 'bold',
   },
   sensitivityRow: {
     flexDirection: 'row',

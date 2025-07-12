@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ScrollView, Modal, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, ScrollView, Modal, Alert, TouchableOpacity } from 'react-native';
 import { Camera, CameraView } from 'expo-camera';
 import { useWebSocket } from '@/services/WebSocketContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -129,44 +129,50 @@ export default function PairScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <IconSymbol name="chevron.right" size={64} color="#888" style={styles.logo} />
-      <Text style={styles.title}>Pair with Server</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Server IP (e.g. 192.168.1.5)"
-        value={ip}
-        onChangeText={setIp}
-        autoCapitalize="none"
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Port (default 9000)"
-        value={port}
-        onChangeText={setPort}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Pairing Token"
-        value={token}
-        onChangeText={setToken}
-        autoCapitalize="none"
-      />
-      <Button title="Connect" onPress={handleConnect} />
-      <View style={{ height: 12 }} />
-      <Button title="Scan QR" onPress={handleScanQR} />
-      <Text style={styles.status}>Status: {connected ? 'Connected' : status}</Text>
-      {isAutoConnecting && (
-        <Text style={styles.autoConnectingText}>Auto-connecting to devices...</Text>
-      )}
-      {connectedDevice && (
-        <Text style={styles.connectedDevice}>Connected to: {connectedDevice.name}</Text>
-      )}
-      {hostType && (
-        <Text style={styles.hostType}>Host type: {hostType}</Text>
-      )}
+    <View style={styles.outerContainer}>
+      <View style={styles.card}>
+        <Text style={styles.title}>Pair with Server</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Server IP (e.g. 192.168.1.5)"
+          value={ip}
+          onChangeText={setIp}
+          autoCapitalize="none"
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Port (default 9000)"
+          value={port}
+          onChangeText={setPort}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Pairing Token"
+          value={token}
+          onChangeText={setToken}
+          autoCapitalize="none"
+        />
+        <TouchableOpacity style={styles.connectButton} onPress={handleConnect}>
+          <Text style={styles.connectButtonText}>Connect</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.qrButton} onPress={handleScanQR}>
+          <Text style={styles.qrButtonText}>Scan QR</Text>
+        </TouchableOpacity>
+        <Text style={[styles.status, connected ? styles.statusConnected : status.toLowerCase().includes('error') || status.toLowerCase().includes('fail') ? styles.statusError : null]} numberOfLines={1} ellipsizeMode="tail">
+          Status: {connected ? 'Connected' : status}
+        </Text>
+        {isAutoConnecting && (
+          <Text style={styles.autoConnectingText}>Auto-connecting to devices...</Text>
+        )}
+        {connectedDevice && (
+          <Text style={styles.connectedDevice} numberOfLines={1} ellipsizeMode="tail">Connected to: {connectedDevice.name}</Text>
+        )}
+        {hostType && (
+          <Text style={styles.hostType} numberOfLines={1} ellipsizeMode="tail">Host type: {hostType}</Text>
+        )}
+      </View>
       <Modal visible={scannerVisible} animationType="slide">
         <View style={styles.scannerContainer}>
           {hasPermission === false ? (
@@ -180,65 +186,133 @@ export default function PairScreen() {
               style={StyleSheet.absoluteFillObject}
             />
           )}
-          <Button title="Cancel" onPress={() => setScannerVisible(false)} />
+          <View style={styles.scannerCancelContainer}>
+            <TouchableOpacity style={styles.qrCancelButton} onPress={() => setScannerVisible(false)}>
+              <Text style={styles.qrButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexGrow: 1,
-    alignItems: 'center',
+  outerContainer: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    alignItems: 'center',
+    backgroundColor: '#fafbfc',
+    padding: 16,
   },
-  logo: {
-    marginBottom: 24,
+  card: {
+    width: '96%',
+    maxWidth: 400,
+    backgroundColor: 'white',
+    borderRadius: 18,
+    padding: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    alignItems: 'stretch',
   },
   title: {
-    fontSize: 24,
-    marginBottom: 16,
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 18,
   },
   input: {
     width: '100%',
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 14,
+    fontSize: 16,
+    backgroundColor: '#f7fafd',
+  },
+  connectButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  connectButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  qrButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  qrButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   status: {
-    marginTop: 12,
-    fontSize: 16,
+    marginTop: 8,
+    fontSize: 15,
     fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#888',
   },
-
+  statusConnected: {
+    color: '#1976d2',
+  },
+  statusError: {
+    color: '#f44336',
+  },
+  autoConnectingText: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#1976d2',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  connectedDevice: {
+    marginTop: 6,
+    fontSize: 15,
+    color: '#1976d2',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  hostType: {
+    marginTop: 6,
+    fontSize: 15,
+    color: '#1976d2',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
   scannerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'white',
+    padding: 16,
   },
-  hostType: {
-    marginTop: 8,
-    fontSize: 15,
-    color: '#1976d2',
-    fontWeight: 'bold',
+  scannerCancelContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
-  connectedDevice: {
-    marginTop: 8,
-    fontSize: 15,
-    color: '#4caf50',
-    fontWeight: 'bold',
-  },
-  autoConnectingText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: '#1976d2',
-    fontStyle: 'italic',
-    textAlign: 'center',
+  qrCancelButton: {
+    backgroundColor: '#1976d2',
+    borderRadius: 8,
+    paddingVertical: 18,
+    paddingHorizontal: 36,
+    alignItems: 'center',
+    marginBottom: 0,
   },
 }); 
