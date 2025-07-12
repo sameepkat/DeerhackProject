@@ -50,5 +50,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onTrayAction: (callback) => ipcRenderer.on('tray-action', callback),
   
   // Remove listeners
-  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel)
+  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
+  getQrPath: () => ipcRenderer.invoke('get-qr-path')
 }); 

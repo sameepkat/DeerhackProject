@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { spawn } = require('child_process');
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
@@ -9,6 +10,10 @@ let tray;
 let isDiscovering = false;
 let connectedDevices = [];
 let isQuitting = false; // Flag to track if we're actually quitting
+let pythonProcess;
+
+// Remove all Python process spawn logic for ws_handler
+// Only keep the IPC handler for get-qr-path
 
 function createMenu() {
   // Create a minimal menu that doesn't include default quit behavior
@@ -468,6 +473,7 @@ app.whenReady().then(async () => {
   createMenu();
   createWindow();
   createTray();
+  // startPythonServer(); // Removed as per edit hint
   
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -774,4 +780,9 @@ ipcMain.handle('test-settings', () => {
     console.error('Test settings error:', error);
     throw error;
   }
+}); 
+
+ipcMain.handle('get-qr-path', () => {
+  // Return the absolute path to the QR code in the assets directory within gui
+  return path.resolve(__dirname, 'assets/pairing_qr.png');
 }); 

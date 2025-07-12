@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { QrCode, RefreshCw, Wifi } from 'lucide-react';
+// Removed: import pairingQR from "../../../assests/pairing_qr.png";
 
 const QRCode = () => {
   const [localIP, setLocalIP] = useState('');
   const [qrData, setQrData] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Directly use the static path to the QR code image in the assets folder
+  const qrPath = 'assets/pairing_qr.png';
 
   useEffect(() => {
     const getIP = async () => {
@@ -12,8 +15,11 @@ const QRCode = () => {
         if (window.electronAPI) {
           const ip = await window.electronAPI.getLocalIP();
           setLocalIP(ip);
-          // This will be replaced with actual QR generation from Python
           setQrData(`http://${ip}:3000`);
+          // Use Electron's IPC to get the QR code path
+          // window.electronAPI.getQrPath().then((path) => {
+          //   setQrPath(`file://${path}?t=${Date.now()}`); // cache-busting
+          // });
         } else {
           setLocalIP('127.0.0.1');
           setQrData('http://127.0.0.1:3000');
@@ -27,16 +33,17 @@ const QRCode = () => {
     getIP();
   }, []);
 
-
-
   const refreshQR = async () => {
     setIsLoading(true);
     try {
-      // This will be replaced with actual QR refresh logic from Python
       if (window.electronAPI) {
         const ip = await window.electronAPI.getLocalIP();
         setLocalIP(ip);
         setQrData(`http://${ip}:3000`);
+        // Force reload the QR image by updating the timestamp
+        // window.electronAPI.getQrPath().then((path) => {
+        //   setQrPath(`file://${path}?t=${Date.now()}`);
+        // });
       }
     } catch (error) {
       console.error('Failed to refresh QR:', error);
@@ -73,25 +80,21 @@ const QRCode = () => {
               <RefreshCw className={`w-5 h-5 text-gray-600 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
           </div>
-          
-          {/* QR Code Placeholder */}
+          {/* QR Code Display */}
           <div className="flex flex-col items-center space-y-4 sm:space-y-6">
             <div className="relative">
-              {/* This div will be replaced with actual QR code from Python */}
-              <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 flex items-center justify-center">
-                <div className="text-center">
-                  <QrCode className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">QR Code will appear here</p>
-                  <p className="text-xs text-gray-400 mt-1">Generated from Python</p>
-                </div>
+              <div className="w-48 h-48 sm:w-64 sm:h-64 rounded-xl border-2 border-gray-200 overflow-hidden">
+                <img
+                  src={qrPath}
+                  alt="Pairing QR"
+                  style={{ width: 256, height: 256 }}
+                />
               </div>
-              
               {/* Connection Status Overlay */}
               <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
                 <div className="w-2 h-2 bg-white rounded-full"></div>
               </div>
             </div>
-            
             <div className="text-center">
               <p className="text-sm text-gray-600 mb-1">Scan with your mobile device</p>
               <p className="text-xs text-gray-500">Point your camera at the QR code</p>

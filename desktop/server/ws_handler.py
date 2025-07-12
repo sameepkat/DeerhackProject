@@ -6,9 +6,9 @@ import string
 import socket
 import websockets
 import base64
-import tkinter as tk
+import time
+import tempfile
 from pathlib import Path
-from PIL import Image, ImageTk
 import qrcode
 import threading
 
@@ -21,36 +21,15 @@ file_transfers = {}  # Track active file transfers
 downloads_dir = Path.home() / "Downloads"
 downloads_dir.mkdir(exist_ok=True)
 
-# Global variable for the QR window
-qr_window = None
+# Save QR code to Electron GUI's assets directory
+assets_dir = Path(__file__).parent.parent / "gui" / "assets"
+assets_dir.mkdir(exist_ok=True)
 
-def create_qr_window(pairing_info):
-    """Create a tkinter window to display the QR code."""
-    global qr_window
-    
-    # Create the main window
-    qr_window = tk.Tk()
-    qr_window.title("Deerhack Project - QR Code for Pairing")
-    qr_window.geometry("400x500")
-    qr_window.resizable(False, False)
-    
-    # Center the window
-    qr_window.update_idletasks()
-    x = (qr_window.winfo_screenwidth() // 2) - (400 // 2)
-    y = (qr_window.winfo_screenheight() // 2) - (500 // 2)
-    qr_window.geometry(f"400x500+{x}+{y}")
-    
-    # Create main frame
-    main_frame = tk.Frame(qr_window, padx=20, pady=20)
-    main_frame.pack(fill=tk.BOTH, expand=True)
-    
-    # Title label
-    title_label = tk.Label(main_frame, text="Scan QR Code to Pair Device", 
-                          font=("Arial", 16, "bold"))
-    title_label.pack(pady=(0, 20))
-    
-    # Generate QR code image
+
+def save_qr_code(pairing_info):
+    """Save QR code image to assets folder."""
     try:
+        # Generate QR code
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -63,58 +42,27 @@ def create_qr_window(pairing_info):
         # Create QR code image
         qr_image = qr.make_image(fill_color="black", back_color="white")
         
-        # Convert to PhotoImage for tkinter
-        photo = ImageTk.PhotoImage(qr_image)
+        # Save to assets directory using a binary file handle to avoid linter errors
+        qr_file_path = assets_dir / "pairing_qr.png"
+        with open(qr_file_path, "wb") as f:
+            qr_image.save(f)
         
-        # Display QR code
-        qr_label = tk.Label(main_frame, image=photo)
-        qr_label.image = photo  # Keep a reference
-        qr_label.pack(pady=(0, 20))
+        print(f"✅ QR code saved to: {qr_file_path}")
+        print(f"📱 Scan this QR code with your mobile device to pair")
+        print(f"🔗 Or manually enter:")
+        print(f"   IP: {pairing_info['server_ip']}")
+        print(f"   Port: {pairing_info['port_no']}")
+        print(f"   Token: {pairing_info['pairing_token']}")
+        
+        return str(qr_file_path)
         
     except Exception as e:
-        error_label = tk.Label(main_frame, text=f"Failed to generate QR code: {e}", 
-                             fg="red", wraplength=350)
-        error_label.pack(pady=(0, 20))
-    
-    # Server info frame
-    info_frame = tk.Frame(main_frame)
-    info_frame.pack(fill=tk.X, pady=(0, 20))
-    
-    # Server information
-    info_text = f"""Server Information:
-IP Address: {pairing_info['server_ip']}
-Port: {pairing_info['port_no']}
-Pairing Token: {pairing_info['pairing_token']}"""
-    
-    info_label = tk.Label(info_frame, text=info_text, 
-                         font=("Arial", 10), justify=tk.LEFT)
-    info_label.pack()
-    
-    # Status frame
-    status_frame = tk.Frame(main_frame)
-    status_frame.pack(fill=tk.X)
-    
-    status_label = tk.Label(status_frame, text="Waiting for mobile device to connect...", 
-                           font=("Arial", 10), fg="blue")
-    status_label.pack()
-    
-    # Store references for updating
-    qr_window.status_label = status_label
-    
-    return qr_window
+        print(f"❌ Failed to generate QR code: {e}")
+        return None
 
 def update_status(message):
-    """Update the status message in the QR window."""
-    if qr_window and hasattr(qr_window, 'status_label'):
-        qr_window.status_label.config(text=message)
-
-def close_qr_window():
-    """Close the QR code window."""
-    global qr_window
-    if qr_window:
-        qr_window.quit()
-        qr_window.destroy()
-        qr_window = None
+    """Update the status message in console."""
+    print(f"📱 Status: {message}")
 
 def get_local_ip():
     """Get the local IP address of the machine."""
@@ -683,35 +631,10 @@ def get_pairing_info():
     return pairing_info
 
 def show_qr_window(pairing_info):
-    import json
-    # Generate QR code image
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=8,
-        border=2,
-    )
-    qr.add_data(json.dumps(pairing_info))
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # Tkinter window
-    root = tk.Tk()
-    root.title("Scan to Pair Device")
-    root.geometry("400x500")
-    root.resizable(False, False)
-
-    # Convert PIL image to Tkinter PhotoImage
-    photo = ImageTk.PhotoImage(img)
-    label = tk.Label(root, image=photo)
-    label.image = photo  # Keep a reference!
-    label.pack(pady=20)
-
-    # Show info
-    info = f"IP: {pairing_info['server_ip']}\nPort: {pairing_info['port_no']}\nToken: {pairing_info['pairing_token']}"
-    tk.Label(root, text=info, font=("Arial", 12)).pack(pady=10)
-
-    root.mainloop()
+    """This function is kept for compatibility but now just saves QR code to file."""
+    print("QR code window functionality has been replaced with file-based QR code generation.")
+    print("QR code is automatically saved to the temp directory.")
+    return save_qr_code(pairing_info)
 
 async def main(stop_event=None):
     """Main server function."""
@@ -720,13 +643,15 @@ async def main(stop_event=None):
     print(f'Port: {PORT}')
     print(f'Pairing token: {TOKEN}')
     
-    # Start QR code window in a separate thread
-    threading.Thread(target=show_qr_window, args=(pairing_info,), daemon=True).start()
-    print('--- QR code window opened ---')
+    # Save QR code to temp folder instead of creating GUI window
+    qr_file_path = save_qr_code(pairing_info)
+    if qr_file_path:
+        print(f'--- QR code saved to: {qr_file_path} ---')
     print('--- Waiting for mobile device to connect... ---')
     
     # Start WebSocket server
     server = await websockets.serve(handle_connection, "0.0.0.0", PORT)
+    
     try:
         while True:
             # Check the stop_event every 0.5 seconds
