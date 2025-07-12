@@ -3,7 +3,7 @@ import {
   Smartphone, 
   Upload, 
   Download, 
-  MessageSquare, 
+  Volume2,
   Wifi,
   Activity,
   Clock,
@@ -50,11 +50,11 @@ const Dashboard = () => {
       color: 'bg-green-500'
     },
     {
-      icon: MessageSquare,
-      title: 'Send Message',
-      description: 'Send messages to devices',
-      action: () => window.location.href = '/messages',
-      color: 'bg-purple-500'
+      icon: Volume2,
+      title: 'Multimedia Control',
+      description: 'Control volume and brightness',
+      action: () => window.location.href = '/multimedia',
+      color: 'bg-yellow-500'
     },
     {
       icon: Smartphone,
@@ -216,4 +216,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

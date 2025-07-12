@@ -5,7 +5,7 @@ import MobileNav from './components/MobileNav';
 import Dashboard from './pages/Dashboard';
 import Devices from './pages/Devices';
 import FileTransfer from './pages/FileTransfer';
-import Messages from './pages/Messages';
+import MultimediaControl from './pages/MultimediaControl';
 import Settings from './pages/Settings';
 import { DeviceProvider } from './contexts/DeviceContext';
 import { TransferProvider } from './contexts/TransferContext';
@@ -54,7 +54,7 @@ function App() {
         <Router>
           <div className="flex h-screen bg-gray-50">
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block">
+            <div className="hidden lg:flex lg:flex-shrink-0">
               <Sidebar />
             </div>
             
@@ -67,7 +67,7 @@ function App() {
             </div>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-auto relative">
+            <main className="flex-1 overflow-auto relative min-w-0">
               {/* Mobile Header */}
               <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3">
                 <div className="flex items-center justify-between">
@@ -90,7 +90,7 @@ function App() {
                   <Route path="/" element={<Dashboard />} />
                   <Route path="/devices" element={<Devices />} />
                   <Route path="/transfer" element={<FileTransfer />} />
-                  <Route path="/messages" element={<Messages />} />
+                  <Route path="/multimedia" element={<MultimediaControl />} />
                   <Route path="/settings" element={<Settings />} />
                 </Routes>
               </div>
@@ -102,4 +102,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;
