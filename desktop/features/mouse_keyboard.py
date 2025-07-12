@@ -1,7 +1,6 @@
 # Mouse/keyboard simulation
 import pyautogui
 import time
-import threading
 
 def track_cursor_polling():
     print("Using polling method (fallback for permission issues)")
@@ -20,7 +19,6 @@ def track_cursor_polling():
 
 def track_cursor_pynput():
     """Original method using pynput event listeners"""
-    from pynput import mouse
     from pynput.mouse import Button, Listener
     
     def on_cursor_move(x, y):

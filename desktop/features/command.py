@@ -4,7 +4,7 @@ import shlex
 from typing import List, Union
 
 class SudoCommandError(Exception):
-    """Raised when attempting to run a command that requires sudo privileges."""
+    """Raised when attempting to run a command that requires sudo privileges. something soemtihng siht"""
     pass
 
 def run_command(cmd: Union[str, List[str]], **kwargs) -> subprocess.CompletedProcess:
