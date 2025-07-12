@@ -44,7 +44,7 @@ async def handle_connection(websocket):  # Fixed: removed 'path' parameter
     except websockets.exceptions.ConnectionClosed:
         print(f'Client {client_ip} disconnected')
 
-async def main():
+async def main(stop_event=None):
     """Main server function."""
     print('--- WebSocket Pairing Server ---')
     print(f'LAN IP: {pairing_info["server_ip"]}')
@@ -60,10 +60,21 @@ async def main():
         print('Failed to generate QR code')
     
     print('--- Waiting for mobile device to connect... ---')
-    
     # Start WebSocket server
-    async with websockets.serve(handle_connection, "0.0.0.0", PORT):
-        await asyncio.Future()  # run forever
+    server = await websockets.serve(handle_connection, "0.0.0.0", PORT)
+    try:
+        while True:
+            # Check the stop_event every 0.5 seconds
+            if stop_event and stop_event.is_set():
+                print("Shutting down websocket server...")
+                break
+            await asyncio.sleep(0.5)
+    finally:
+        server.close()
+        await server.wait_closed()
+
+def run_server(stop_event=None):
+    asyncio.run(main(stop_event))
 
 # Server configuration
 PORT = 9000
