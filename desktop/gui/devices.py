@@ -1,5 +1,7 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame, QScrollArea)
 from PySide6.QtCore import Qt, QTimer
+from ..server.ws_handler import get_pairing_info, PORT, TOKEN
+from ..utils.qr import QRUtils
 
 class DevicesPage(QWidget):
     def __init__(self, parent=None):
@@ -30,48 +32,68 @@ class DevicesPage(QWidget):
         """)
         header_info.addWidget(header_title)
         header_info.addWidget(header_subtitle)
-        actions_layout = QHBoxLayout()
-        self.start_discovery_btn = QPushButton("🔍 Start Discovery")
-        self.start_discovery_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #45a049;
-            }
-            QPushButton:pressed {
-                background-color: #3d8b40;
-            }
-        """)
-        self.show_qr_btn = QPushButton("📱 Show QR")
-        self.show_qr_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2196F3;
-                color: white;
-                border: none;
-                padding: 8px 16px;
-                border-radius: 6px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1976D2;
-            }
-            QPushButton:pressed {
-                background-color: #1565C0;
-            }
-        """)
-        actions_layout.addWidget(self.start_discovery_btn)
-        actions_layout.addWidget(self.show_qr_btn)
+
+        # uncomment this to enable discovery and show qr 
+        # self.start_discovery_btn = QPushButton("🔍 Start Discovery")
+        # self.start_discovery_btn.setStyleSheet("""
+        #     QPushButton {
+        #         background-color: #4CAF50;
+        #         color: white;
+        #         border: none;
+        #         padding: 8px 16px;
+        #         border-radius: 6px;
+        #         font-size: 14px;
+        #         font-weight: bold;
+        #     }
+        #     QPushButton:hover {
+        #         background-color: #45a049;
+        #     }
+        #     QPushButton:pressed {
+        #         background-color: #3d8b40;
+        #     }
+        # """)
+        # self.show_qr_btn = QPushButton("📱 Show QR")
+        # self.show_qr_btn.setStyleSheet("""
+        #     QPushButton {
+        #         background-color: #2196F3;
+        #         color: white;
+        #         border: none;
+        #         padding: 8px 16px;
+        #         border-radius: 6px;
+        #         font-size: 14px;
+        #         font-weight: bold;
+        #     }
+        #     QPushButton:hover {
+        #         background-color: #1976D2;
+        #     }
+        #     QPushButton:pressed {
+        #         background-color: #1565C0;
+        #     }
+        # """)
+        # actions_layout.addWidget(self.start_discovery_btn)
+        # actions_layout.addWidget(self.show_qr_btn)
+
+        # Connection Info
+        pairing_info = get_pairing_info()
+        conn_info = f"""
+        <b>LAN IP:</b> {pairing_info['server_ip']}<br>
+        <b>Port:</b> {PORT}<br>
+        <b>Pairing Token:</b> {TOKEN}
+        """
+        conn_label = QLabel(conn_info)
+        conn_label.setStyleSheet("font-size: 15px; color: #222; background: #f8f9fb; border-radius: 8px; padding: 12px;")
+        conn_label.setTextFormat(Qt.RichText)
+        header_info.addWidget(conn_label)
+
+        # QR Code
+        qr_str = QRUtils.generate_qr_code(pairing_info)
+        qr_label = QLabel(f"<pre style='font-size:8px; color:#222;'>{qr_str}</pre>")
+        qr_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        header_info.addWidget(qr_label)
+
         header_layout.addLayout(header_info)
         header_layout.addStretch()
-        header_layout.addLayout(actions_layout)
+        # header_layout.addLayout(actions_layout)
         self.devices_layout.addLayout(header_layout)
         # Connection Information Card
         conn_info_card = QFrame()
@@ -157,30 +179,13 @@ class DevicesPage(QWidget):
         self.devices_list_layout.setContentsMargins(0, 0, 0, 0)
         self.devices_list_layout.setSpacing(8)
         self.show_empty_devices_state()
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(self.devices_list_widget)
-        scroll_area.setStyleSheet("""
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
-            QScrollBar:vertical {
-                background-color: #f0f0f0;
-                width: 8px;
-                border-radius: 4px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #c0c0c0;
-                border-radius: 4px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #a0a0a0;
-            }
-        """)
-        self.devices_layout.addWidget(scroll_area)
-        self.start_discovery_btn.clicked.connect(self.start_discovery)
-        self.show_qr_btn.clicked.connect(self.show_qr_code)
+        self.devices_layout.addWidget(self.devices_list_widget)
+
+        # Uncomment this to enable discovery and show qr 
+        # self.start_discovery_btn.clicked.connect(self.start_discovery)
+        # self.show_qr_btn.clicked.connect(self.show_qr_code)
+
+
         self.refresh_btn.clicked.connect(self.refresh_devices)
 
     def show_empty_devices_state(self):

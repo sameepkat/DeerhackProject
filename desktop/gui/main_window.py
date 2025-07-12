@@ -1,6 +1,6 @@
 # desktop/gui/main_window.py
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QFrame, QVBoxLayout, QStackedWidget, QLabel, QPushButton
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QFrame, QVBoxLayout, QStackedWidget, QLabel, QPushButton, QScrollArea
 from PySide6.QtCore import Qt
 
 from multiprocessing import Process, Event
@@ -51,6 +51,18 @@ class MainWindow(QMainWindow):
         self.main_content.addWidget(self.devices_page)
         self.main_content.addWidget(self.file_transfer_page)
         main_layout.addWidget(self.main_content)
+
+        # Wrap the stacked widget in a scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidget(self.main_content)
+        scroll_area.setWidgetResizable(True)
+        main_layout.addWidget(scroll_area)
+
+        scroll_area.setStyleSheet("""
+            QScrollArea, QScrollArea QWidget {
+                background: #f5f5f5;
+            }
+        """)
 
         # Set default page
         self.show_dashboard()
